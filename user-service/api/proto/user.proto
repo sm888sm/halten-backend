@@ -1,0 +1,83 @@
+syntax = "proto3";
+package userpb;
+option go_package = "github.com/sm888sm/halten-backend/user-service/pb/user";
+// Data Structures (Messages)
+message User {
+    uint64 id = 1;
+    string username = 2;
+    string email = 3;
+}
+// Register
+message CreateUserRequest {
+    string username = 1;
+    string password = 2;
+    string email = 3;
+}
+message CreateUserResponse {
+    uint64 id = 1;
+    string username = 2;
+}
+// Change Password
+message UpdatePasswordRequest {
+    uint64 id = 1; // Updated
+    string newPassword = 2; // Updated
+}
+message UpdatePasswordResponse {
+    string message = 1;
+}
+// Change E-mail
+message UpdateEmailRequest {
+    uint64 id = 1; // Updated
+    string newEmail = 2; // Updated
+}
+message UpdateEmailResponse {
+    string message = 1;
+}
+// Change Username
+message UpdateUsernameRequest {
+    string oldUsername = 1;
+    string newUsername = 2;
+}
+message UpdateUsernameResponse {
+    string message = 1;
+}
+// Find by ID
+message GetUserByIDRequest {
+    uint64 id = 1;
+}
+message GetUserByIDResponse {
+    User user = 1;
+}
+// Find by Username
+message GetUserByUsernameRequest {
+    string username = 1;
+}
+message GetUserByUsernameResponse {
+    User user = 1;
+}
+// Confirm New E-mail
+message ConfirmNewEmailRequest {
+    string username = 1;
+    string token = 2;
+}
+message ConfirmNewEmailResponse {
+    string message = 1;
+}
+// Resend Confirmation E-mail
+message ResendConfirmationEmailRequest {
+    string username = 1;
+}
+message ResendConfirmationEmailResponse {
+    string message = 1;
+}
+// The User Service Definition
+service UserService {
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDResponse);
+    rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse);
+    rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
+    rpc UpdateEmail(UpdateEmailRequest) returns (UpdateEmailResponse);
+    rpc UpdateUsername(UpdateUsernameRequest) returns (UpdateUsernameResponse);
+    rpc ConfirmNewEmail(ConfirmNewEmailRequest) returns (ConfirmNewEmailResponse);
+    rpc ResendConfirmationEmail(ResendConfirmationEmailRequest) returns (ResendConfirmationEmailResponse);
+}

@@ -27,11 +27,11 @@ dist/
 *.sln.docstates
 
 # Ignore Go executable
-board-service
-card-service
-gateway-service
-list-service
-log-service
-notification-service
-search-service
-user-service
+./board-service/board-service
+./card-service/card-service
+./gateway-service/gateway-service
+./list-service/list-service
+./log-service/log-service
+./notification-service/notification-service
+./search-service/search-service
+./user-service/user-service

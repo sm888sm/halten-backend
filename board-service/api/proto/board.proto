@@ -1,0 +1,151 @@
+syntax = "proto3";
+package boardpb;
+option go_package = "github.com/sm888sm/halten-backend/board-service/pb/board";
+
+// Data Structures (Messages)
+message Pagination {
+    uint64 current_page = 1;
+    uint64 total_pages = 2;
+    uint64 items_per_page = 3;
+    uint64 total_items = 4;
+    bool has_more = 5;
+}
+
+message Board {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    string name = 3;
+    string visibility = 4;
+}
+
+message Permission {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+    string role = 4;
+}
+
+message User {
+    uint64 user_id = 1;
+    string user_name = 2;
+    string role = 3;
+}
+
+// Request and Response Messages
+message CreateBoardRequest {
+    uint64 user_id = 2;
+    string name = 3;
+}
+
+message CreateBoardResponse {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    string name = 3;
+}
+
+message GetBoardByIDRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message GetBoardByIDResponse {
+    Board board = 1;
+}
+
+message GetBoardUsersRequest {
+    uint64 id = 1;
+}
+
+message GetBoardUsersResponse {
+    repeated User users = 1;
+}
+
+message GetBoardsRequest {
+    uint64 user_id = 1;
+    uint64 page_number = 2;
+    uint64 page_size = 3;
+
+}
+
+message GetBoardsResponse {
+    Pagination pagination = 1;
+    repeated Board boards = 2;
+}
+
+message UpdateBoardRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    string name = 3;
+}
+
+message UpdateBoardResponse {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    string name = 3;
+}
+
+message DeleteBoardRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message DeleteBoardResponse {
+    string message = 1;
+}
+
+message AddUsersRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    repeated uint64 user_ids = 3;
+    string role = 4;
+  }
+  
+  message AddUsersResponse {
+    string message = 1;
+  }
+  
+  message RemoveUsersRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    repeated uint64 user_ids = 3;
+  }
+  
+  message RemoveUsersResponse {
+    string message = 1;
+  }
+
+message AssignUserRoleRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    uint64 assign_user_id = 3;
+    string role = 4;
+}
+
+message AssignUserRoleResponse {
+    string message = 1;
+}
+
+message ChangeBoardOwnerRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    uint64 current_owner_id = 3;
+    uint64 new_owner_id = 4;
+}
+
+message ChangeBoardOwnerResponse {
+    string message = 1;
+}
+
+// Service Definition
+service BoardService {
+    rpc CreateBoard(CreateBoardRequest) returns (CreateBoardResponse);
+    rpc GetBoardByID(GetBoardByIDRequest) returns (GetBoardByIDResponse);
+    rpc GetBoardUsers(GetBoardUsersRequest) returns (GetBoardUsersResponse);
+    rpc GetBoards(GetBoardsRequest) returns (GetBoardsResponse);
+    rpc UpdateBoard(UpdateBoardRequest) returns (UpdateBoardResponse);
+    rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
+    rpc AddBoardUser(AddUsersRequest) returns (AddUsersResponse);
+    rpc RemoveBoardUser(RemoveUsersRequest) returns (RemoveUsersResponse);
+    rpc AssignUserRoleBoard(AssignUserRoleRequest) returns (AssignUserRoleResponse);
+    rpc ChangeBoardOwner(ChangeBoardOwnerRequest) returns (ChangeBoardOwnerResponse);
+}

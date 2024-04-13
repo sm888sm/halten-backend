@@ -1,0 +1,108 @@
+syntax = "proto3";
+package cardpb;
+import "google/protobuf/timestamp.proto";
+option go_package = "github.com/sm888sm/halten-backend/card-service/pb/card";
+
+// Data Structures (Messages)
+message Card {
+    uint64 id = 1;
+    uint64 list_id = 2;
+    string name = 3;
+    string description = 4;
+    int32 position = 5;
+    google.protobuf.Timestamp start_date = 6;
+    google.protobuf.Timestamp due_date = 7;
+    uint64 attachment_id = 8;
+}
+
+message CreateCardRequest {
+    uint64 id = 1;
+    uint64 list_id = 2;
+    string name = 3;
+    uint64 user_id = 4;
+    uint64 board_id = 5;
+}
+
+message CreateCardResponse {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    uint64 board_id = 3;
+    string name = 4;
+}
+
+message GetCardsByListRequest {
+    uint64 list_id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+    uint64 id = 4;
+}
+
+message GetCardsByListResponse {
+    repeated Card cards = 2;
+}
+
+message UpdateCardRequest {
+    uint64 id = 1;
+    string name = 3;
+    string description = 4;
+    google.protobuf.Timestamp start_date = 5;
+    google.protobuf.Timestamp due_date = 6;
+    uint64 attachment_id = 7;
+    uint64 list_id = 8;
+    uint64 board_id = 9;
+    uint64 user_id = 10;
+}
+
+message UpdateCardResponse {
+    uint64 id = 1;
+    string name = 3;
+    string description = 4;
+    google.protobuf.Timestamp start_date = 5;
+    google.protobuf.Timestamp due_date = 6;
+    uint64 attachment_id = 7;
+    uint64 list_id = 8;
+    uint64 board_id = 9;
+    uint64 user_id = 10;
+}
+
+message DeleteCardRequest {
+    uint64 id = 1;
+    uint64 list_id = 2;
+    uint64 board_id = 3;
+    uint64 user_id = 4;
+}
+
+message DeleteCardResponse {
+    bool message = 1;
+}
+
+message MoveCardPositionRequest {
+    uint64 id = 1;
+    int32 new_position = 2;
+    uint64 list_id = 3;
+    uint64 board_id = 4;
+    uint64 user_id = 5;
+}
+
+message MoveCardPositionResponse {
+    bool message = 1;
+}
+
+message WatchCardActivityRequest {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+}
+
+message WatchCardActivityResponse {
+    string message = 1;
+}
+
+service CardService {
+    rpc CreateCard(CreateCardRequest) returns (CreateCardResponse) {}
+    rpc GetCardsByList(GetCardsByListRequest) returns (GetCardsByListResponse) {}
+    rpc UpdateCard(UpdateCardRequest) returns (UpdateCardResponse) {}
+    rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse) {}
+    rpc MoveCardPosition(MoveCardPositionRequest) returns (MoveCardPositionResponse) {}
+    rpc WatchCardActivity(WatchCardActivityRequest) returns (stream WatchCardActivityResponse) {}
+}

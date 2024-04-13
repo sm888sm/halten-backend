@@ -1,0 +1,88 @@
+syntax = "proto3";
+package listpb;
+option go_package = "github.com/sm888sm/halten-backend/list-service/pb/list";
+
+// Data Structures (Messages)
+
+message List {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    string name = 3;
+    int32 position = 4;
+}
+
+message CreateListRequest {
+    uint64 user_id = 1;
+    uint64 board_id = 2;
+    string name = 3;
+}
+
+message CreateListResponse {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    uint64 board_id = 3;
+    string name = 4;
+}
+
+message GetListsByBoardRequest {
+    uint64 board_id = 1;
+    uint64 user_id = 2;
+    uint64 id = 3;
+}
+
+message GetListsByBoardResponse {
+    repeated List lists = 2;
+}
+
+message UpdateListRequest {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+    string name = 4;
+}
+
+message UpdateListResponse {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+    string name = 4;
+}
+
+message DeleteListRequest {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 user_id = 3;
+}
+
+message DeleteListResponse {
+    bool message = 1;
+}
+
+message MoveListPositionRequest {
+    uint64 id = 1;
+    uint64 new_position = 2;
+    uint64 board_id = 3;
+    uint64 user_id = 4;
+}
+
+message MoveListPositionResponse {
+    bool message = 1;
+}
+
+message WatchListActivityRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message WatchListActivityResponse {
+    string message = 1;
+}
+
+service ListService {
+    rpc CreateList(CreateListRequest) returns (CreateListResponse) {}
+    rpc GetListsByBoard(GetListsByBoardRequest) returns (GetListsByBoardResponse) {}
+    rpc UpdateList(UpdateListRequest) returns (UpdateListResponse) {}
+    rpc DeleteList(DeleteListRequest) returns (DeleteListResponse) {}
+    rpc MoveListPosition(MoveListPositionRequest) returns (MoveListPositionResponse) {}
+    rpc WatchListActivity(WatchListActivityRequest) returns (stream WatchListActivityResponse) {}
+}
