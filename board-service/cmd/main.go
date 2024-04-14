@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	} else {
-		log.Printf("Successfully connected to the database.")
+		log.Printf("Successfully connected to database.")
 	}
 
 	sqlDB, err := db.SQLConn.DB()

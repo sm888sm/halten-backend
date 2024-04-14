@@ -36,7 +36,6 @@ func NewBoardService(repo repositories.BoardRepository, publishers publishers.Pu
 	}
 }
 
-// TODO: Implement it with RabbitMQ
 func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoardRequest) (*pb_board.CreateBoardResponse, error) {
 	board := &models.Board{
 		Name:   req.Name,
@@ -60,13 +59,23 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 
 	listRes, err := listService.CreateList(ctx, listReq)
 	if err != nil {
-		return nil, err
+		// Delete board through repo
+		err = s.boardRepo.DeleteBoard(uint(req.UserId), uint(listReq.BoardId))
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
+
+		return nil, errorhandler.NewGrpcInternalError()
 	}
 
 	cardService, err := s.services.GetCardClient()
 	if err != nil {
 		// Delete board through repo
-		s.boardRepo.DeleteBoard(uint(req.UserId), uint(listReq.BoardId))
+		err = s.boardRepo.DeleteBoard(uint(req.UserId), uint(listReq.BoardId))
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
+
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
@@ -91,10 +100,17 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 		}
 
 		// Delete board through repo
-		s.boardRepo.DeleteBoard(uint(req.UserId), uint(listReq.BoardId))
+		err = s.boardRepo.DeleteBoard(uint(req.UserId), uint(listReq.BoardId))
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
 
 		// Delete board through publishers
-		s.publishers.ListPublisher.Publish(publishers.DeleteList, bytes)
+		err = s.publishers.ListPublisher.Publish(publishers.DeleteList, bytes)
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
+
 		return nil, err
 	}
 
