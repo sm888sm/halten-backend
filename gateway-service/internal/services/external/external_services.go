@@ -1,4 +1,4 @@
-package services
+package external
 
 import (
 	"context"
@@ -19,17 +19,17 @@ import (
 )
 
 type Services struct {
-	authClient  pbUser.AuthServiceClient
-	listClient  pbList.ListServiceClient
-	boardClient pbBoard.BoardServiceClient
-	cardClient  pbCard.CardServiceClient
 	userClient  pbUser.UserServiceClient
+	authClient  pbUser.AuthServiceClient
+	boardClient pbBoard.BoardServiceClient
+	listClient  pbList.ListServiceClient
+	cardClient  pbCard.CardServiceClient
 
-	authConn  *grpc.ClientConn
-	listConn  *grpc.ClientConn
-	boardConn *grpc.ClientConn
-	cardConn  *grpc.ClientConn
 	userConn  *grpc.ClientConn
+	authConn  *grpc.ClientConn
+	boardConn *grpc.ClientConn
+	listConn  *grpc.ClientConn
+	cardConn  *grpc.ClientConn
 }
 
 var services *Services
@@ -99,6 +99,13 @@ func GetServices(cfg *config.ServiceConfig) *Services {
 	return services
 }
 
+func (s *Services) GetUserClient() (pbUser.UserServiceClient, error) {
+	if s.userConn.GetState() != connectivity.Ready {
+		return nil, errors.New("user service not available")
+	}
+	return s.userClient, nil
+}
+
 func (s *Services) GetAuthClient() (pbUser.AuthServiceClient, error) {
 	if s.authConn.GetState() != connectivity.Ready {
 		return nil, errors.New("auth service not available")
@@ -127,17 +134,10 @@ func (s *Services) GetCardClient() (pbCard.CardServiceClient, error) {
 	return s.cardClient, nil
 }
 
-func (s *Services) GetUserClient() (pbUser.UserServiceClient, error) {
-	if s.userConn.GetState() != connectivity.Ready {
-		return nil, errors.New("user service not available")
-	}
-	return s.userClient, nil
-}
-
 func (s *Services) Close() {
+	s.userConn.Close()
 	s.authConn.Close()
 	s.listConn.Close()
 	s.boardConn.Close()
 	s.cardConn.Close()
-	s.userConn.Close()
 }

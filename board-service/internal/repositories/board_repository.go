@@ -109,10 +109,10 @@ func (r *GormBoardRepository) GetBoards(userID uint, pageNumber, pageSize int) (
 
 	return &internal_models.BoardList{
 		Pagination: internal_models.Pagination{
-			CurrentPage:  pageNumber,
-			TotalPages:   totalPages,
-			ItemsPerPage: pageSize,
-			TotalItems:   int(totalItems),
+			CurrentPage:  uint64(pageNumber),
+			TotalPages:   uint64(totalPages),
+			ItemsPerPage: uint64(pageSize),
+			TotalItems:   uint64(totalItems),
 			HasMore:      hasMore,
 		},
 		Boards: boards,

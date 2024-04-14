@@ -4,10 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/handlers"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/middlewares"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 )
 
-func SetupRoutes(r *gin.Engine, svc *services.Services, secretKey string) {
+func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey string) {
 
 	authHandler := handlers.NewAuthHandler(svc)
 	userHandler := handlers.NewUserHandler(svc)

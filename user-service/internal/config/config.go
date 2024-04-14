@@ -10,6 +10,8 @@ type Config struct {
 	Database   DatabaseConfig
 	SecretKey  string
 	BcryptCost int
+	RabbitMQ   RabbitMQConfig
+	Services   ServiceConfig
 }
 
 type DatabaseConfig struct {
@@ -19,6 +21,17 @@ type DatabaseConfig struct {
 	Username string
 	Password string
 	DBName   string
+}
+
+type ServiceConfig struct {
+	UserServiceAddr  string
+	BoardServiceAddr string
+	ListServiceAddr  string
+	CardServiceAddr  string
+}
+
+type RabbitMQConfig struct { // Add this struct
+	URL string
 }
 
 func LoadConfig() (*Config, error) {
@@ -49,5 +62,14 @@ func LoadConfig() (*Config, error) {
 		},
 		SecretKey:  os.Getenv("SECRET_KEY"),
 		BcryptCost: bcryptCost,
+		Services: ServiceConfig{
+			UserServiceAddr:  os.Getenv("USER_SERVICE_ADDR"),
+			BoardServiceAddr: os.Getenv("BOARD_SERVICE_ADDR"),
+			ListServiceAddr:  os.Getenv("LIST_SERVICE_ADDR"),
+			CardServiceAddr:  os.Getenv("CARD_SERVICE_ADDR"),
+		},
+		RabbitMQ: RabbitMQConfig{ // Add this line
+			URL: os.Getenv("RABBITMQ_URL"),
+		},
 	}, nil
 }

@@ -7,11 +7,11 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 
-func UserMiddleware(services *services.Services, secretKey string) gin.HandlerFunc {
+func UserMiddleware(services *external_services.Services, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		authHeader := c.GetHeader("Authorization")

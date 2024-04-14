@@ -7,8 +7,10 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
+	"github.com/sm888sm/halten-backend/gateway-service/internal/connections/rabbitmq"
+
 	"github.com/sm888sm/halten-backend/gateway-service/internal/routes"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 )
 
 func main() {
@@ -22,8 +24,14 @@ func main() {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
 
+	// Connect to RabbitMQ
+	err = rabbitmq.Connect(&cfg.RabbitMQ)
+	if err != nil {
+		log.Fatalf("Error connecting to RabbitMQ: %v", err)
+	}
+
 	// Get services
-	svc := services.GetServices(&cfg.Services)
+	svc := external_services.GetServices(&cfg.Services)
 
 	defer svc.Close()
 

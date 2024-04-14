@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -8,11 +9,13 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"github.com/sm888sm/halten-backend/models"
 	pb "github.com/sm888sm/halten-backend/user-service/api/pb"
+	consumer "github.com/sm888sm/halten-backend/user-service/internal/messaging/rabbitmq/consumer"
 
 	"github.com/sm888sm/halten-backend/user-service/internal/config"
-	"github.com/sm888sm/halten-backend/user-service/internal/db"
+	"github.com/sm888sm/halten-backend/user-service/internal/connections/db"
+	"github.com/sm888sm/halten-backend/user-service/internal/connections/rabbitmq"
+
 	"github.com/sm888sm/halten-backend/user-service/internal/middlewares"
 	"github.com/sm888sm/halten-backend/user-service/internal/repositories"
 	"github.com/sm888sm/halten-backend/user-service/internal/services"
@@ -33,14 +36,23 @@ func main() {
 	err = db.Connect(&cfg.Database)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
+	} else {
+		log.Printf("Successfully connected to the database.")
 	}
+
 	sqlDB, err := db.SQLConn.DB()
 	if err != nil {
 		log.Fatalf("Error getting underlying sql.DB: %v", err)
 	}
 	defer sqlDB.Close()
 
-	models.Migrate(db.SQLConn)
+	// Connect to RabbitMQ
+	err = rabbitmq.Connect(&cfg.RabbitMQ)
+	if err != nil {
+		log.Fatalf("Error connecting to RabbitMQ: %v", err)
+	} else {
+		log.Printf("Successfully connected to RabbitMQ.")
+	}
 
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(db.SQLConn)
@@ -56,6 +68,9 @@ func main() {
 	pb.RegisterAuthServiceServer(grpcServer, authService)
 	pb.RegisterUserServiceServer(grpcServer, userService)
 
+	// Run RabbitMQ Consumer
+	runUserConsumer(userService)
+
 	// Start listening
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
@@ -66,4 +81,20 @@ func main() {
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
+}
+
+func runUserConsumer(boardService *services.UserService) {
+	// Get the RabbitMQ channel
+	ch := rabbitmq.RabbitMQChannel
+
+	// Initialize your consumer here.
+	c := consumer.NewUserConsumer(ch, boardService)
+
+	// Run the consumer in a separate goroutine because it's a blocking operation
+	go func() {
+		err := c.ConsumeUserMessages(context.Background())
+		if err != nil {
+			log.Fatalf("Failed to consume messages: %v", err)
+		}
+	}()
 }

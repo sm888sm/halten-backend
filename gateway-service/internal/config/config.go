@@ -9,6 +9,7 @@ type Config struct {
 	Port      string
 	SecretKey string
 	Database  DatabaseConfig
+	RabbitMQ  RabbitMQConfig
 	Services  ServiceConfig
 }
 
@@ -28,6 +29,10 @@ type ServiceConfig struct {
 	CardServiceAddr  string
 }
 
+type RabbitMQConfig struct { // Add this struct
+	URL string
+}
+
 func LoadConfig() (*Config, error) {
 	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
@@ -35,7 +40,8 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		Port: os.Getenv("PORT"), // Or your default
+		Port:      os.Getenv("PORT"), // Or your default
+		SecretKey: os.Getenv("SECRET_KEY"),
 		Database: DatabaseConfig{
 			Driver:   "postgres", // Changed to postgres
 			Host:     os.Getenv("DB_HOST"),
@@ -50,6 +56,8 @@ func LoadConfig() (*Config, error) {
 			ListServiceAddr:  os.Getenv("LIST_SERVICE_ADDR"),
 			CardServiceAddr:  os.Getenv("CARD_SERVICE_ADDR"),
 		},
-		SecretKey: os.Getenv("SECRET_KEY"),
+		RabbitMQ: RabbitMQConfig{ // Add this line
+			URL: os.Getenv("RABBITMQ_URL"),
+		},
 	}, nil
 }

@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
+	"github.com/sm888sm/halten-backend/list-service/internal/config"
 
 	"gorm.io/driver/postgres" // Import the PostgreSQL driver
 	"gorm.io/gorm"

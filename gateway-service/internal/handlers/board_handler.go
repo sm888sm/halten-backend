@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 )
 
 type CreateBoardInput struct {
@@ -34,7 +34,7 @@ type ChangeBoardOwnerInput struct {
 }
 
 type BoardHandler struct {
-	services *services.Services
+	services *external_services.Services
 }
 
 type AssignUserRoleInput struct {
@@ -42,7 +42,7 @@ type AssignUserRoleInput struct {
 	Role   string `json:"role"`
 }
 
-func NewBoardHandler(services *services.Services) *BoardHandler {
+func NewBoardHandler(services *external_services.Services) *BoardHandler {
 	return &BoardHandler{services: services}
 }
 

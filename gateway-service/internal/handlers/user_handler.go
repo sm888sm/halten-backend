@@ -7,16 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 	"google.golang.org/grpc/status"
 )
 
 type UserHandler struct {
-	services *services.Services
+	services *external_services.Services
 }
 
-func NewUserHandler(services *services.Services) *UserHandler {
+func NewUserHandler(services *external_services.Services) *UserHandler {
 	return &UserHandler{services: services}
 }
 

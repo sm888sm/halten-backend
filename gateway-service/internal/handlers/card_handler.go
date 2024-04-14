@@ -8,7 +8,7 @@ import (
 	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 
@@ -28,10 +28,10 @@ type MoveCardPositionInput struct {
 }
 
 type CardHandler struct {
-	services *services.Services
+	services *external_services.Services
 }
 
-func NewCardHandler(services *services.Services) *CardHandler {
+func NewCardHandler(services *external_services.Services) *CardHandler {
 	return &CardHandler{services: services}
 }
 

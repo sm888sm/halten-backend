@@ -3,19 +3,19 @@ package handlers
 import (
 	"net/http"
 
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
 )
 
 type AuthHandler struct {
-	services *services.Services
+	services *external_services.Services
 }
 
-func NewAuthHandler(services *services.Services) *AuthHandler {
+func NewAuthHandler(services *external_services.Services) *AuthHandler {
 	return &AuthHandler{services: services}
 }
 

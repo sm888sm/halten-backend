@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	"github.com/sm888sm/halten-backend/gateway-service/internal/services"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
@@ -26,10 +26,10 @@ type MoveListPositionInput struct {
 }
 
 type ListHandler struct {
-	services *services.Services
+	services *external_services.Services
 }
 
-func NewListHandler(services *services.Services) *ListHandler {
+func NewListHandler(services *external_services.Services) *ListHandler {
 	return &ListHandler{services: services}
 }
 

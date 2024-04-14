@@ -11,7 +11,8 @@ import (
 	pb "github.com/sm888sm/halten-backend/card-service/api/pb"
 
 	"github.com/sm888sm/halten-backend/card-service/internal/config"
-	"github.com/sm888sm/halten-backend/card-service/internal/db"
+	"github.com/sm888sm/halten-backend/card-service/internal/connections/db"
+	"github.com/sm888sm/halten-backend/card-service/internal/connections/rabbitmq"
 	"github.com/sm888sm/halten-backend/card-service/internal/middlewares"
 	"github.com/sm888sm/halten-backend/card-service/internal/repositories"
 	"github.com/sm888sm/halten-backend/card-service/internal/services"
@@ -32,12 +33,23 @@ func main() {
 	err = db.Connect(&cfg.Database)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
+	} else {
+		log.Printf("Successfully connected to the database.")
 	}
+
 	sqlDB, err := db.SQLConn.DB()
 	if err != nil {
 		log.Fatalf("Error getting underlying sql.DB: %v", err)
 	}
 	defer sqlDB.Close()
+
+	// Connect to RabbitMQ
+	err = rabbitmq.Connect(&cfg.RabbitMQ)
+	if err != nil {
+		log.Fatalf("Error connecting to RabbitMQ: %v", err)
+	} else {
+		log.Printf("Successfully connected to RabbitMQ.")
+	}
 
 	// Initialize repositories
 	cardRepo := repositories.NewCardRepository(db.SQLConn)
