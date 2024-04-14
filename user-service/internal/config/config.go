@@ -37,7 +37,7 @@ type RabbitMQConfig struct { // Add this struct
 func LoadConfig() (*Config, error) {
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
-		port = 8000 // Default port
+		port = 50051 // Default user service port
 	}
 
 	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))

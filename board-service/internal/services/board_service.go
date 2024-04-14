@@ -26,10 +26,10 @@ type BoardService struct {
 	boardRepo repositories.BoardRepository
 	pb_board.UnimplementedBoardServiceServer
 	services   *external_services.Services
-	publishers publishers.Publishers
+	publishers *publishers.Publishers
 }
 
-func NewBoardService(repo repositories.BoardRepository, publishers publishers.Publishers) *BoardService {
+func NewBoardService(repo repositories.BoardRepository, services *external_services.Services, publishers *publishers.Publishers) *BoardService {
 	return &BoardService{
 		boardRepo:  repo,
 		publishers: publishers,

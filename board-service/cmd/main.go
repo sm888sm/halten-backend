@@ -11,6 +11,8 @@ import (
 
 	pb "github.com/sm888sm/halten-backend/board-service/api/pb"
 	consumer "github.com/sm888sm/halten-backend/board-service/internal/messaging/rabbitmq/consumer"
+	external_services "github.com/sm888sm/halten-backend/board-service/internal/services/external"
+
 	"github.com/sm888sm/halten-backend/common/messaging/rabbitmq/publishers"
 
 	"github.com/sm888sm/halten-backend/board-service/internal/config"
@@ -55,17 +57,21 @@ func main() {
 		log.Printf("Successfully connected to RabbitMQ.")
 	}
 
+	// Initialize repositories
+	boardRepo := repositories.NewBoardRepository(db.SQLConn)
+
+	// Initialize external services
+	svc := external_services.GetServices(&cfg.Services)
+	defer svc.Close()
+
 	// Initialize publishers
-	publishers := publishers.Publishers{
+	publishers := &publishers.Publishers{
 		CardPublisher: publishers.NewCardPublisher(rabbitmq.RabbitMQChannel),
 		ListPublisher: publishers.NewListPublisher(rabbitmq.RabbitMQChannel),
 	}
 
-	// Initialize repositories
-	boardRepo := repositories.NewBoardRepository(db.SQLConn)
-
 	// Initialize services
-	boardService := services.NewBoardService(boardRepo, publishers)
+	boardService := services.NewBoardService(boardRepo, svc, publishers)
 
 	// Create gRPC server with validation interceptor
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(middlewares.ValidationInterceptor))

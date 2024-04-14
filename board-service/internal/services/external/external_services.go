@@ -1,4 +1,4 @@
-package externalservices
+package external
 
 import (
 	"context"
@@ -33,31 +33,76 @@ var services *Services
 var once sync.Once
 
 func GetServices(cfg *config.ServiceConfig) *Services {
-	var err error
 	once.Do(func() {
 		services = &Services{}
 
-		// Set up a connection to the ListService.
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		services.listConn, err = grpc.DialContext(ctx, cfg.ListServiceAddr, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			log.Printf("Error connecting to ListService: %v", err)
-		} else {
-			services.listClient = pbList.NewListServiceClient(services.listConn)
-			log.Printf("Successfully connected to ListService")
+		// Function to connect to a service
+		connect := func(target string, setConn func(conn *grpc.ClientConn), setClient func(client interface{})) {
+			var conn *grpc.ClientConn
+			for {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				var err error
+				conn, err = grpc.DialContext(ctx, target, grpc.WithInsecure(), grpc.WithBlock())
+				cancel()
+				if err != nil {
+					log.Printf("Unable to reconnect to service at %s: %v. Will attempt to reconnect in 1 second.", target, err)
+					time.Sleep(1 * time.Second) // wait for a second before trying again
+				} else {
+					setConn(conn)
+					break
+				}
+			}
+
+			// Start a goroutine to monitor the connection
+			go func() {
+				for {
+					time.Sleep(5 * time.Second) // check every 5 seconds
+					if conn.GetState() != connectivity.Ready {
+						// connection is not ready, attempt to reconnect
+						for {
+							ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+							newConn, err := grpc.DialContext(ctx, target, grpc.WithInsecure(), grpc.WithBlock())
+							cancel()
+							if err != nil {
+								log.Printf("Unable to reconnect to service at %s: %v. Will attempt to reconnect in 1 second.", target, err)
+								time.Sleep(1 * time.Second) // wait for a second before trying again
+							} else {
+								conn.Close()                                                    // close the old connection
+								conn = newConn                                                  // replace the old connection with the new one
+								setConn(newConn)                                                // update the connection
+								log.Printf("Successfully reconnected to service at %s", target) // log the reconnection
+								break
+							}
+						}
+					}
+				}
+			}()
 		}
 
-		// Set up a connection to the CardService.
-		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		services.cardConn, err = grpc.DialContext(ctx, cfg.CardServiceAddr, grpc.WithInsecure(), grpc.WithBlock())
-		if err != nil {
-			log.Printf("Error connecting to CardService: %v", err)
-		} else {
-			services.cardClient = pbCard.NewCardServiceClient(services.cardConn)
-			log.Printf("Successfully connected to CardService")
-		}
+		// Set up connections to the services
+		go connect(cfg.UserServiceAddr, func(conn *grpc.ClientConn) {
+			services.userConn = conn
+		}, func(client interface{}) {
+			services.userClient = client.(pbUser.UserServiceClient)
+		})
+
+		go connect(cfg.UserServiceAddr, func(conn *grpc.ClientConn) {
+			services.authConn = conn
+		}, func(client interface{}) {
+			services.authClient = client.(pbUser.AuthServiceClient)
+		})
+
+		go connect(cfg.ListServiceAddr, func(conn *grpc.ClientConn) {
+			services.listConn = conn
+		}, func(client interface{}) {
+			services.listClient = client.(pbList.ListServiceClient)
+		})
+
+		go connect(cfg.CardServiceAddr, func(conn *grpc.ClientConn) {
+			services.cardConn = conn
+		}, func(client interface{}) {
+			services.cardClient = client.(pbCard.CardServiceClient)
+		})
 	})
 
 	return services
@@ -92,8 +137,16 @@ func (s *Services) GetCardClient() (pbCard.CardServiceClient, error) {
 }
 
 func (s *Services) Close() {
-	s.authConn.Close()
-	s.userConn.Close()
-	s.listConn.Close()
-	s.cardConn.Close()
+	if s.userConn != nil {
+		s.userConn.Close()
+	}
+	if s.authConn != nil {
+		s.authConn.Close()
+	}
+	if s.listConn != nil {
+		s.listConn.Close()
+	}
+	if s.cardConn != nil {
+		s.cardConn.Close()
+	}
 }
