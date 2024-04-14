@@ -9,8 +9,8 @@ import (
 	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/connections/rabbitmq"
 
+	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/routes"
-	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 )
 
 func main() {

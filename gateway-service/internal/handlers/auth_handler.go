@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb"
 
 	"github.com/gin-gonic/gin"

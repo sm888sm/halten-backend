@@ -2,9 +2,9 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/handlers"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/middlewares"
-	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
 )
 
 func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey string) {

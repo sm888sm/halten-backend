@@ -8,7 +8,7 @@ import (
 	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
-	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 

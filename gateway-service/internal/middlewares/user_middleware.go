@@ -7,7 +7,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
-	external_services "github.com/sm888sm/halten-backend/gateway-service/internal/services/external"
+	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 
