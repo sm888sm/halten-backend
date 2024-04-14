@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/sm888sm/halten-backend/board-service/api/pb"
+	external_services "github.com/sm888sm/halten-backend/board-service/external/services"
 	consumer "github.com/sm888sm/halten-backend/board-service/internal/messaging/rabbitmq/consumer"
-	external_services "github.com/sm888sm/halten-backend/board-service/internal/services/external"
 
 	"github.com/sm888sm/halten-backend/common/messaging/rabbitmq/publishers"
 

@@ -34,13 +34,18 @@ type RabbitMQConfig struct { // Add this struct
 }
 
 func LoadConfig() (*Config, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port
+	}
+
 	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
 		dbPort = 5432 // Default PostgreSQL port
 	}
 
 	return &Config{
-		Port:      os.Getenv("PORT"), // Or your default
+		Port:      port, // Or your default
 		SecretKey: os.Getenv("SECRET_KEY"),
 		Database: DatabaseConfig{
 			Driver:   "postgres", // Changed to postgres

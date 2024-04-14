@@ -11,7 +11,7 @@ import (
 	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
 	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
 
-	external_services "github.com/sm888sm/halten-backend/board-service/internal/services/external"
+	external_services "github.com/sm888sm/halten-backend/board-service/external/services"
 
 	"github.com/sm888sm/halten-backend/board-service/internal/repositories"
 

@@ -1,4 +1,4 @@
-package external
+package services
 
 import (
 	"context"
@@ -10,26 +10,23 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
+	"github.com/sm888sm/halten-backend/board-service/internal/config"
 
-	pbBoard "github.com/sm888sm/halten-backend/board-service/api/pb"
 	pbCard "github.com/sm888sm/halten-backend/card-service/api/pb"
 	pbList "github.com/sm888sm/halten-backend/list-service/api/pb"
 	pbUser "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 
 type Services struct {
-	userClient  pbUser.UserServiceClient
-	authClient  pbUser.AuthServiceClient
-	boardClient pbBoard.BoardServiceClient
-	listClient  pbList.ListServiceClient
-	cardClient  pbCard.CardServiceClient
+	userClient pbUser.UserServiceClient
+	authClient pbUser.AuthServiceClient
+	listClient pbList.ListServiceClient
+	cardClient pbCard.CardServiceClient
 
-	userConn  *grpc.ClientConn
-	authConn  *grpc.ClientConn
-	boardConn *grpc.ClientConn
-	listConn  *grpc.ClientConn
-	cardConn  *grpc.ClientConn
+	userConn *grpc.ClientConn
+	authConn *grpc.ClientConn
+	listConn *grpc.ClientConn
+	cardConn *grpc.ClientConn
 }
 
 var services *Services
@@ -95,12 +92,6 @@ func GetServices(cfg *config.ServiceConfig) *Services {
 			services.authClient = client.(pbUser.AuthServiceClient)
 		})
 
-		go connect(cfg.BoardServiceAddr, func(conn *grpc.ClientConn) {
-			services.boardConn = conn
-		}, func(client interface{}) {
-			services.boardClient = client.(pbBoard.BoardServiceClient)
-		})
-
 		go connect(cfg.ListServiceAddr, func(conn *grpc.ClientConn) {
 			services.listConn = conn
 		}, func(client interface{}) {
@@ -138,13 +129,6 @@ func (s *Services) GetListClient() (pbList.ListServiceClient, error) {
 	return s.listClient, nil
 }
 
-func (s *Services) GetBoardClient() (pbBoard.BoardServiceClient, error) {
-	if s.boardConn.GetState() != connectivity.Ready {
-		return nil, errors.New("board service not available")
-	}
-	return s.boardClient, nil
-}
-
 func (s *Services) GetCardClient() (pbCard.CardServiceClient, error) {
 	if s.cardConn.GetState() != connectivity.Ready {
 		return nil, errors.New("card service not available")
@@ -161,9 +145,6 @@ func (s *Services) Close() {
 	}
 	if s.listConn != nil {
 		s.listConn.Close()
-	}
-	if s.boardConn != nil {
-		s.boardConn.Close()
 	}
 	if s.cardConn != nil {
 		s.cardConn.Close()
