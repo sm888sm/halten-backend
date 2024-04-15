@@ -112,7 +112,7 @@ func (h *BoardHandler) GetBoardByID(c *gin.Context) {
 	responsehandler.Success(c, http.StatusOK, "Board fetched successfully", resp)
 }
 
-func (h *BoardHandler) GetBoards(c *gin.Context) {
+func (h *BoardHandler) GetBoardList(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
@@ -141,12 +141,12 @@ func (h *BoardHandler) GetBoards(c *gin.Context) {
 		return
 	}
 
-	req := &pb_board.GetBoardsRequest{
+	req := &pb_board.GetBoardListRequest{
 		UserId:     uint64(userId),
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	}
-	resp, err := boardService.GetBoards(c, req)
+	resp, err := boardService.GetBoardList(c, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
@@ -351,7 +351,7 @@ func (h *BoardHandler) GetBoardUsers(c *gin.Context) {
 	responsehandler.Success(c, http.StatusOK, "Board users retrieved successfully", resp.Users)
 }
 
-func (h *BoardHandler) AssignUserRoleBoard(c *gin.Context) {
+func (h *BoardHandler) AssignBoardUserRole(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
@@ -385,7 +385,7 @@ func (h *BoardHandler) AssignUserRoleBoard(c *gin.Context) {
 		AssignUserId: input.UserId,
 		Role:         input.Role,
 	}
-	_, err = boardService.AssignUserRoleBoard(c, req)
+	_, err = boardService.AssignBoardUserRole(c, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return

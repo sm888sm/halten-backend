@@ -7,7 +7,7 @@ import (
 
 type Label struct {
 	gorm.Model
-	Name  string
-	Color string
-	Cards []Card `gorm:"many2many:card_labels;"`
+	Name    string
+	Color   string
+	BoardID uint
 }

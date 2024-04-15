@@ -54,7 +54,11 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 	var permission models.Permission
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Preload("Permissions").First(&board, id).Error; err != nil {
+		if err := tx.Preload("Permissions").
+			Preload("Lists").
+			Preload("Cards").
+			Preload("Labels").
+			First(&board, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
 			}
@@ -80,21 +84,22 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 	return &board, nil
 }
 
-func (r *GormBoardRepository) GetBoards(userID uint, pageNumber, pageSize int) (*internal_models.BoardList, error) {
+func (r *GormBoardRepository) GetBoardList(userID uint, pageNumber, pageSize int) (*internal_models.BoardList, error) {
 	var boards []models.Board
 	var totalItems int64
 	offset := (pageNumber - 1) * pageSize
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Joins("JOIN user_boards ON user_boards.board_id = boards.id").
-			Where("user_boards.user_id = ?", userID).
+		if err := tx.Select("boards.id, boards.created_at, boards.updated_at, boards.name, boards.visibility").
+			Joins("JOIN permissions ON permissions.board_id = boards.id").
+			Where("permissions.user_id = ? boards.is_archived = ?", userID, false).
 			Offset(offset).Limit(pageSize).
 			Find(&boards).Error; err != nil {
 			return err
 		}
 
-		tx.Model(&models.Board{}).Joins("JOIN user_boards ON user_boards.board_id = boards.id").
-			Where("user_boards.user_id = ?", userID).
+		tx.Model(&models.Board{}).Joins("JOIN permissions ON permissions.board_id = boards.id").
+			Where("permissions.user_id = ?", userID).
 			Count(&totalItems)
 
 		return nil
@@ -283,7 +288,7 @@ func (r *GormBoardRepository) RemoveBoardUsers(userID uint, boardID uint, userID
 	return nil
 }
 
-func (r *GormBoardRepository) AssignUserRoleBoard(userID uint, boardID uint, AssignUserId uint, role string) error {
+func (r *GormBoardRepository) AssignBoardUserRole(userID uint, boardID uint, AssignUserId uint, role string) error {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, userID).Update("role", role).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
@@ -331,4 +336,63 @@ func (r *GormBoardRepository) ChangeBoardOwner(boardID uint, currentOwnerID uint
 	})
 
 	return err
+}
+
+func (r *GormBoardRepository) ArchiveBoard(userID, boardID uint) error {
+	board := &models.Board{}
+	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
+	if err != nil {
+		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+	}
+	board.IsArchived = true
+	return r.db.Save(board).Error
+}
+
+func (r *GormBoardRepository) RestoreBoard(userID, boardID uint) error {
+	board := &models.Board{}
+	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
+	if err != nil {
+		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+	}
+	board.IsArchived = false
+	return r.db.Save(board).Error
+}
+
+func (r *GormBoardRepository) GetArchivedBoardList(userID uint, pageNumber, pageSize int) (*internal_models.BoardList, error) {
+	var boards []models.Board
+	var totalItems int64
+	offset := (pageNumber - 1) * pageSize
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Select("boards.id, boards.created_at, boards.updated_at, boards.name, boards.visibility").
+			Joins("JOIN permissions ON permissions.board_id = boards.id").
+			Where("permissions.user_id = ? AND boards.is_archived = ? AND boards.user_id = ?", userID, true, userID).
+			Offset(offset).Limit(pageSize).
+			Find(&boards).Error; err != nil {
+			return err
+		}
+
+		tx.Model(&models.Board{}).Joins("JOIN permissions ON permissions.board_id = boards.id").
+			Where("permissions.user_id = ? AND boards.is_archived = ? AND boards.user_id = ?", userID, true, userID).Count(&totalItems)
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(math.Ceil(float64(totalItems) / float64(pageSize)))
+	hasMore := pageNumber < totalPages
+
+	return &internal_models.BoardList{
+		Pagination: internal_models.Pagination{
+			CurrentPage:  uint64(pageNumber),
+			TotalPages:   uint64(totalPages),
+			ItemsPerPage: uint64(pageSize),
+			TotalItems:   uint64(totalItems),
+			HasMore:      hasMore,
+		},
+		Boards: boards,
+	}, nil
 }

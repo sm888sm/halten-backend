@@ -20,8 +20,8 @@ func ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.Unar
 		if err := validateGetBoardByIDRequest(req.(*pb.GetBoardByIDRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/GetBoards":
-		if err := validateGetBoardsRequest(req.(*pb.GetBoardsRequest)); err != nil {
+	case "/proto.BoardService/GetBoardList":
+		if err := validateGetBoardListRequest(req.(*pb.GetBoardListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/GetBoardUsers":
@@ -91,7 +91,7 @@ func validateGetBoardByIDRequest(req *pb.GetBoardByIDRequest) error {
 	return nil
 }
 
-func validateGetBoardsRequest(req *pb.GetBoardsRequest) error {
+func validateGetBoardListRequest(req *pb.GetBoardListRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
 	if req.UserId == 0 {

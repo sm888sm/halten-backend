@@ -9,15 +9,11 @@ import (
 
 func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey string) {
 
-	authHandler := handlers.NewAuthHandler(svc)
 	userHandler := handlers.NewUserHandler(svc)
+	authHandler := handlers.NewAuthHandler(svc)
 	boardHandler := handlers.NewBoardHandler(svc)
 	listHandler := handlers.NewListHandler(svc)
 	cardHandler := handlers.NewCardHandler(svc)
-
-	authRoutes := r.Group("/auth")
-	authRoutes.POST("/login", authHandler.Login)
-	authRoutes.POST("/refresh", authHandler.RefreshToken)
 
 	userRoutes := r.Group("/user")
 	userRoutes.POST("/create", userHandler.CreateUser)
@@ -30,18 +26,22 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 		userRoutes.PUT("/update-username", userHandler.UpdateUsername)
 	}
 
+	authRoutes := r.Group("/auth")
+	authRoutes.POST("/login", authHandler.Login)
+	authRoutes.POST("/refresh", authHandler.RefreshToken)
+
 	boardRoutes := r.Group("/boards")
 	boardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
 	{
 		boardRoutes.POST("/", boardHandler.CreateBoard)
 		boardRoutes.GET("/:id", boardHandler.GetBoardByID)
-		boardRoutes.GET("/", boardHandler.GetBoards)
+		boardRoutes.GET("/", boardHandler.GetBoardList)
 		boardRoutes.PUT("/:id", boardHandler.UpdateBoard)
 		boardRoutes.DELETE("/:id", boardHandler.DeleteBoard)
 		boardRoutes.POST("/:id/users", boardHandler.AddBoardUsers)
 		boardRoutes.DELETE("/:id/users", boardHandler.RemoveBoardUsers)
 		boardRoutes.GET("/:id/users", boardHandler.GetBoardUsers)
-		boardRoutes.PUT("/:id/users/:userId", boardHandler.AssignUserRoleBoard)
+		boardRoutes.PUT("/:id/users/:userId", boardHandler.AssignBoardUserRole)
 		boardRoutes.PUT("/:id/owner", boardHandler.ChangeBoardOwner)
 	}
 

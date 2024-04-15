@@ -2,6 +2,8 @@ syntax = "proto3";
 package boardpb;
 option go_package = "github.com/sm888sm/halten-backend/board-service/pb/board";
 
+import "google/protobuf/timestamp.proto";
+
 // Data Structures (Messages)
 message Pagination {
     uint64 current_page = 1;
@@ -16,6 +18,56 @@ message Board {
     uint64 user_id = 2;
     string name = 3;
     string visibility = 4;
+    repeated Permission permissions = 5;
+    repeated List lists = 6;
+    repeated Card cards = 7;
+    repeated Label labels = 8;
+    google.protobuf.Timestamp created_at = 9;
+    google.protobuf.Timestamp updated_at = 10;
+}
+
+message List {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    string name = 3;
+    int32 position = 4;
+}
+
+message Card {
+    uint64 id = 1;
+    uint64 board_id = 2;
+    uint64 list_id = 3;
+    string name = 4;
+    string description = 5;
+    int32 position = 6;
+    google.protobuf.Timestamp start_date = 7;
+    google.protobuf.Timestamp due_date = 8;
+    Attachment attachment = 9;
+}
+
+message Label {
+    uint64 id = 1;
+    string name = 2;
+    string color = 3;
+    uint64 board_id = 4;
+}
+
+message Attachment {
+    uint64 id = 1;
+    uint64 card_id = 2;
+    string file_name = 3;
+    string file_path = 4;
+    string type = 5;
+    string thumbnail = 6;
+}
+
+message BoardMeta {
+    uint64 id = 1;
+    uint64 user_id = 2;
+    string name = 3;
+    string visibility = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp updated_at = 6;
 }
 
 message Permission {
@@ -60,16 +112,16 @@ message GetBoardUsersResponse {
     repeated User users = 1;
 }
 
-message GetBoardsRequest {
+message GetBoardListRequest {
     uint64 user_id = 1;
     uint64 page_number = 2;
     uint64 page_size = 3;
 
 }
 
-message GetBoardsResponse {
+message GetBoardListResponse {
     Pagination pagination = 1;
-    repeated Board boards = 2;
+    repeated BoardMeta boards = 2;
 }
 
 message UpdateBoardRequest {
@@ -136,16 +188,37 @@ message ChangeBoardOwnerResponse {
     string message = 1;
 }
 
+message ArchiveBoardRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message ArchiveBoardResponse {
+    string message = 1;
+}
+
+message RestoreBoardRequest {
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message RestoreBoardResponse {
+    string message = 1;
+}
+
 // Service Definition
 service BoardService {
     rpc CreateBoard(CreateBoardRequest) returns (CreateBoardResponse);
     rpc GetBoardByID(GetBoardByIDRequest) returns (GetBoardByIDResponse);
     rpc GetBoardUsers(GetBoardUsersRequest) returns (GetBoardUsersResponse);
-    rpc GetBoards(GetBoardsRequest) returns (GetBoardsResponse);
+    rpc GetBoardList(GetBoardListRequest) returns (GetBoardListResponse);
     rpc UpdateBoard(UpdateBoardRequest) returns (UpdateBoardResponse);
     rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
     rpc AddBoardUser(AddUsersRequest) returns (AddUsersResponse);
     rpc RemoveBoardUser(RemoveUsersRequest) returns (RemoveUsersResponse);
-    rpc AssignUserRoleBoard(AssignUserRoleRequest) returns (AssignUserRoleResponse);
+    rpc AssignBoardUserRole(AssignUserRoleRequest) returns (AssignUserRoleResponse);
     rpc ChangeBoardOwner(ChangeBoardOwnerRequest) returns (ChangeBoardOwnerResponse);
+    rpc GetAchievedBoardList(GetBoardListRequest) returns (GetBoardListResponse);
+    rpc ArchiveBoard(ArchiveBoardRequest) returns (ArchiveBoardResponse);
+    rpc RestoreBoard(RestoreBoardRequest) returns (RestoreBoardResponse);
 }

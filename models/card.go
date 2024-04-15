@@ -8,12 +8,18 @@ import (
 
 type Card struct {
 	gorm.Model
-	ListID      uint
-	Name        string `gorm:"type:varchar(50)"`
+	BoardID     uint   `gorm:"not null"`
+	ListID      uint   `gorm:"not null"`
+	Name        string `gorm:"type:varchar(50);not null"`
 	Description string `gorm:"type:varchar(16384)"`
 	Position    int
+	IsArchived  bool
+	IsCompleted bool
 	StartDate   *time.Time
 	DueDate     *time.Time
-	Attachment  Attachment `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	Watches     []Watch    `gorm:"foreignKey:CardID"`
+	Attachments []Attachment `gorm:"foreignKey:CardID"`
+	Comments    []Comment    `gorm:"foreignKey:CardID"`
+	Labels      []Label      `gorm:"foreignKey:CardID"`
+	Members     []CardMember `gorm:"foreignKey:CardID"`
+	Watches     []Watch      `gorm:"foreignKey:CardID"`
 }

@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
 	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
@@ -122,40 +123,56 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 }
 
 func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardByIDRequest) (*pb_board.GetBoardByIDResponse, error) {
+	// Extract the user ID from the context
+
+	// Call the repository function
 	board, err := s.boardRepo.GetBoardByID(uint(req.Id), uint(req.UserId))
 	if err != nil {
 		return nil, err
+
 	}
-	res := &pb_board.Board{
-		Id:         uint64(board.ID),
-		Name:       board.Name,
-		UserId:     uint64(board.UserID),
-		Visibility: board.Visibility,
+
+	// Convert the board model to a protobuf message
+	boardProto := &pb_board.Board{
+		Id:          uint64(board.ID),
+		Name:        board.Name,
+		Visibility:  board.Visibility,
+		UserId:      uint64(board.UserID),
+		CreatedAt:   timestamppb.New(board.CreatedAt),
+		UpdatedAt:   timestamppb.New(board.UpdatedAt),
+		Permissions: convertPermissionsToProto(board.Permissions),
+		Lists:       convertListsToProto(board.Lists),
+		Cards:       convertCardsToProto(board.Cards),
+		Labels:      convertLabelsToProto(board.Labels),
 	}
-	return &pb_board.GetBoardByIDResponse{Board: res}, nil
+
+	// Return the response
+	return &pb_board.GetBoardByIDResponse{Board: boardProto}, nil
 }
 
-func (s *BoardService) GetBoards(ctx context.Context, req *pb_board.GetBoardsRequest) (*pb_board.GetBoardsResponse, error) {
-	boardList, err := s.boardRepo.GetBoards(uint(req.UserId), int(req.PageNumber), int(req.PageSize))
+func (s *BoardService) GetBoardList(ctx context.Context, req *pb_board.GetBoardListRequest) (*pb_board.GetBoardListResponse, error) {
+	boardList, err := s.boardRepo.GetBoardList(uint(req.UserId), int(req.PageNumber), int(req.PageSize))
 	if err != nil {
 		return nil, err
 	}
-	var boards []*pb_board.Board
+	var boards []*pb_board.BoardMeta
 	for _, b := range boardList.Boards {
-		boards = append(boards, &pb_board.Board{
+		boards = append(boards, &pb_board.BoardMeta{
 			Id:         uint64(b.ID),
 			Name:       b.Name,
 			UserId:     uint64(b.UserID),
 			Visibility: b.Visibility,
+			CreatedAt:  timestamppb.New(b.CreatedAt),
+			UpdatedAt:  timestamppb.New(b.UpdatedAt),
 		})
 	}
-	return &pb_board.GetBoardsResponse{
+	return &pb_board.GetBoardListResponse{
 		Boards: boards,
 		Pagination: &pb_board.Pagination{
-			CurrentPage:  uint64(boardList.Pagination.CurrentPage),
-			TotalPages:   uint64(boardList.Pagination.TotalPages),
-			ItemsPerPage: uint64(boardList.Pagination.ItemsPerPage),
-			TotalItems:   uint64(boardList.Pagination.TotalItems),
+			CurrentPage:  boardList.Pagination.CurrentPage,
+			TotalPages:   boardList.Pagination.TotalPages,
+			ItemsPerPage: boardList.Pagination.ItemsPerPage,
+			TotalItems:   boardList.Pagination.TotalItems,
 			HasMore:      boardList.Pagination.HasMore,
 		},
 	}, nil
@@ -233,8 +250,8 @@ func (s *BoardService) GetBoardUsers(ctx context.Context, req *pb_board.GetBoard
 	}, nil
 }
 
-func (s *BoardService) AssignUserRoleBoard(ctx context.Context, req *pb_board.AssignUserRoleRequest) (*pb_board.AssignUserRoleResponse, error) {
-	err := s.boardRepo.AssignUserRoleBoard(uint(req.UserId), uint(req.Id), uint(req.AssignUserId), req.Role)
+func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.AssignUserRoleRequest) (*pb_board.AssignUserRoleResponse, error) {
+	err := s.boardRepo.AssignBoardUserRole(uint(req.UserId), uint(req.Id), uint(req.AssignUserId), req.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -251,4 +268,124 @@ func (s *BoardService) ChangeBoardOwner(ctx context.Context, req *pb_board.Chang
 	return &pb_board.ChangeBoardOwnerResponse{
 		Message: "Owner changed successfully",
 	}, nil
+}
+
+func (s *BoardService) GetArchivedBoardList(ctx context.Context, req *pb_board.GetBoardListRequest) (*pb_board.GetBoardListResponse, error) {
+	boardList, err := s.boardRepo.GetArchivedBoardList(uint(req.UserId), int(req.PageNumber), int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+	var boards []*pb_board.BoardMeta
+	for _, b := range boardList.Boards {
+		boards = append(boards, &pb_board.BoardMeta{
+			Id:         uint64(b.ID),
+			Name:       b.Name,
+			UserId:     uint64(b.UserID),
+			Visibility: b.Visibility,
+			CreatedAt:  timestamppb.New(b.CreatedAt),
+			UpdatedAt:  timestamppb.New(b.UpdatedAt),
+		})
+	}
+	return &pb_board.GetBoardListResponse{
+		Boards: boards,
+		Pagination: &pb_board.Pagination{
+			CurrentPage:  boardList.Pagination.CurrentPage,
+			TotalPages:   boardList.Pagination.TotalPages,
+			ItemsPerPage: boardList.Pagination.ItemsPerPage,
+			TotalItems:   boardList.Pagination.TotalItems,
+			HasMore:      boardList.Pagination.HasMore,
+		},
+	}, nil
+}
+
+func (s *BoardService) RestoreBoard(ctx context.Context, req *pb_board.RestoreBoardRequest) (*pb_board.RestoreBoardResponse, error) {
+	err := s.boardRepo.RestoreBoard(uint(req.UserId), uint(req.Id))
+	if err != nil {
+		return nil, err
+	}
+	return &pb_board.RestoreBoardResponse{
+		Message: "Board restored successfully",
+	}, nil
+}
+
+func (s *BoardService) ArchiveBoard(ctx context.Context, req *pb_board.ArchiveBoardRequest) (*pb_board.ArchiveBoardResponse, error) {
+	err := s.boardRepo.ArchiveBoard(uint(req.UserId), uint(req.Id))
+	if err != nil {
+		return nil, err
+	}
+	return &pb_board.ArchiveBoardResponse{
+		Message: "Board archived successfully",
+	}, nil
+}
+
+func convertPermissionsToProto(permissions []models.Permission) []*pb_board.Permission {
+	var permissionsProto []*pb_board.Permission
+
+	for _, permission := range permissions {
+		permissionProto := &pb_board.Permission{
+			Id:      uint64(permission.ID),
+			BoardId: uint64(permission.BoardID),
+			UserId:  uint64(permission.UserID),
+			Role:    permission.Role,
+		}
+
+		permissionsProto = append(permissionsProto, permissionProto)
+	}
+
+	return permissionsProto
+}
+
+func convertListsToProto(lists []models.List) []*pb_board.List {
+	var listsProto []*pb_board.List
+
+	for _, list := range lists {
+		listProto := &pb_board.List{
+			Id:       uint64(list.ID),
+			BoardId:  uint64(list.BoardID),
+			Name:     list.Name,
+			Position: int32(list.Position),
+		}
+
+		listsProto = append(listsProto, listProto)
+	}
+
+	return listsProto
+}
+
+func convertCardsToProto(cards []models.Card) []*pb_board.Card {
+	var cardsProto []*pb_board.Card
+
+	for _, card := range cards {
+		cardProto := &pb_board.Card{
+			Id:          uint64(card.ID),
+			BoardId:     uint64(card.BoardID),
+			ListId:      uint64(card.ListID),
+			Name:        card.Name,
+			Description: card.Description,
+			Position:    int32(card.Position),
+			StartDate:   timestamppb.New(*card.StartDate),
+			DueDate:     timestamppb.New(*card.DueDate),
+		}
+
+		cardsProto = append(cardsProto, cardProto)
+	}
+
+	return cardsProto
+}
+
+func convertLabelsToProto(labels []models.Label) []*pb_board.Label {
+	var labelsProto []*pb_board.Label
+
+	for _, label := range labels {
+		labelProto := &pb_board.Label{
+			Id:      uint64(label.ID),
+			Name:    label.Name,
+			Color:   label.Color,
+			BoardId: uint64(label.BoardID),
+		}
+
+		labelsProto = append(labelsProto, labelProto)
+	}
+
+	return labelsProto
 }
