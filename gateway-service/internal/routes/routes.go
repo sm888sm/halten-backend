@@ -59,9 +59,10 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 	cardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
 	{
 		cardRoutes.POST("/", cardHandler.CreateCard)
-		cardRoutes.GET("/:id", cardHandler.GetCardsByList)
-		cardRoutes.PUT("/:id", cardHandler.UpdateCard)
-		cardRoutes.DELETE("/:id", cardHandler.DeleteCard)
-		cardRoutes.PUT("/:id/position", cardHandler.MoveCardPosition)
+		cardRoutes.GET("/board/:board-id", cardHandler.GetCardsByBoard)
+		cardRoutes.GET("/list/:list-id", cardHandler.GetCardsByList)
+		cardRoutes.GET("/:card-id", cardHandler.GetCardByID)
+		cardRoutes.DELETE("/:card-id", cardHandler.DeleteCard)
+		cardRoutes.PUT("/:card-id/position", cardHandler.MoveCardPosition)
 	}
 }

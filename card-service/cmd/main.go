@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/sm888sm/halten-backend/card-service/api/pb"
+	middlewares "github.com/sm888sm/halten-backend/card-service/internal/middlewares"
+	"github.com/sm888sm/halten-backend/card-service/internal/services"
 
 	"github.com/sm888sm/halten-backend/card-service/internal/config"
 	"github.com/sm888sm/halten-backend/card-service/internal/connections/db"
 	"github.com/sm888sm/halten-backend/card-service/internal/connections/rabbitmq"
-	"github.com/sm888sm/halten-backend/card-service/internal/middlewares"
 	"github.com/sm888sm/halten-backend/card-service/internal/repositories"
-	"github.com/sm888sm/halten-backend/card-service/internal/services"
 )
 
 func main() {
@@ -57,8 +57,9 @@ func main() {
 	// Initialize services
 	cardService := services.NewCardService(cardRepo)
 
+	validator := middlewares.NewValidator(db.SQLConn)
 	// Create gRPC server with validation interceptor
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(middlewares.ValidationInterceptor))
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(validator.ValidationInterceptor))
 
 	// Register services
 	pb.RegisterCardServiceServer(grpcServer, cardService)

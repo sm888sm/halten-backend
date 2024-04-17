@@ -23,11 +23,25 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CardServiceClient interface {
 	CreateCard(ctx context.Context, in *CreateCardRequest, opts ...grpc.CallOption) (*CreateCardResponse, error)
+	GetCardByID(ctx context.Context, in *GetCardByIDRequest, opts ...grpc.CallOption) (*GetCardByIDResponse, error)
 	GetCardsByList(ctx context.Context, in *GetCardsByListRequest, opts ...grpc.CallOption) (*GetCardsByListResponse, error)
-	UpdateCard(ctx context.Context, in *UpdateCardRequest, opts ...grpc.CallOption) (*UpdateCardResponse, error)
-	DeleteCard(ctx context.Context, in *DeleteCardRequest, opts ...grpc.CallOption) (*DeleteCardResponse, error)
+	GetCardsByBoard(ctx context.Context, in *GetCardsByBoardRequest, opts ...grpc.CallOption) (*GetCardsByBoardResponse, error)
 	MoveCardPosition(ctx context.Context, in *MoveCardPositionRequest, opts ...grpc.CallOption) (*MoveCardPositionResponse, error)
-	WatchCardActivity(ctx context.Context, in *WatchCardActivityRequest, opts ...grpc.CallOption) (CardService_WatchCardActivityClient, error)
+	UpdateCardName(ctx context.Context, in *UpdateCardNameRequest, opts ...grpc.CallOption) (*UpdateCardNameResponse, error)
+	UpdateCardDescription(ctx context.Context, in *UpdateCardDescriptionRequest, opts ...grpc.CallOption) (*UpdateCardDescriptionResponse, error)
+	AddCardLabel(ctx context.Context, in *AddCardLabelRequest, opts ...grpc.CallOption) (*AddCardLabelResponse, error)
+	RemoveCardLabel(ctx context.Context, in *RemoveCardLabelRequest, opts ...grpc.CallOption) (*RemoveCardLabelResponse, error)
+	SetCardDates(ctx context.Context, in *SetCardDatesRequest, opts ...grpc.CallOption) (*SetCardDatesResponse, error)
+	MarkCardComplete(ctx context.Context, in *MarkCardCompleteRequest, opts ...grpc.CallOption) (*MarkCardCompleteResponse, error)
+	AddCardAttachment(ctx context.Context, in *AddCardAttachmentRequest, opts ...grpc.CallOption) (*AddCardAttachmentResponse, error)
+	RemoveCardAttachment(ctx context.Context, in *RemoveCardAttachmentRequest, opts ...grpc.CallOption) (*RemoveCardAttachmentResponse, error)
+	AddCardComment(ctx context.Context, in *AddCardCommentRequest, opts ...grpc.CallOption) (*AddCardCommentResponse, error)
+	RemoveCardComment(ctx context.Context, in *RemoveCardCommentRequest, opts ...grpc.CallOption) (*RemoveCardCommentResponse, error)
+	AddCardMembers(ctx context.Context, in *AddCardMembersRequest, opts ...grpc.CallOption) (*AddCardMembersResponse, error)
+	RemoveCardMembers(ctx context.Context, in *RemoveCardMembersRequest, opts ...grpc.CallOption) (*RemoveCardMembersResponse, error)
+	ArchiveCard(ctx context.Context, in *ArchiveCardRequest, opts ...grpc.CallOption) (*ArchiveCardResponse, error)
+	RestoreCard(ctx context.Context, in *RestoreCardRequest, opts ...grpc.CallOption) (*RestoreCardResponse, error)
+	DeleteCard(ctx context.Context, in *DeleteCardRequest, opts ...grpc.CallOption) (*DeleteCardResponse, error)
 }
 
 type cardServiceClient struct {
@@ -47,6 +61,15 @@ func (c *cardServiceClient) CreateCard(ctx context.Context, in *CreateCardReques
 	return out, nil
 }
 
+func (c *cardServiceClient) GetCardByID(ctx context.Context, in *GetCardByIDRequest, opts ...grpc.CallOption) (*GetCardByIDResponse, error) {
+	out := new(GetCardByIDResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/GetCardByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cardServiceClient) GetCardsByList(ctx context.Context, in *GetCardsByListRequest, opts ...grpc.CallOption) (*GetCardsByListResponse, error) {
 	out := new(GetCardsByListResponse)
 	err := c.cc.Invoke(ctx, "/cardpb.CardService/GetCardsByList", in, out, opts...)
@@ -56,18 +79,9 @@ func (c *cardServiceClient) GetCardsByList(ctx context.Context, in *GetCardsByLi
 	return out, nil
 }
 
-func (c *cardServiceClient) UpdateCard(ctx context.Context, in *UpdateCardRequest, opts ...grpc.CallOption) (*UpdateCardResponse, error) {
-	out := new(UpdateCardResponse)
-	err := c.cc.Invoke(ctx, "/cardpb.CardService/UpdateCard", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *cardServiceClient) DeleteCard(ctx context.Context, in *DeleteCardRequest, opts ...grpc.CallOption) (*DeleteCardResponse, error) {
-	out := new(DeleteCardResponse)
-	err := c.cc.Invoke(ctx, "/cardpb.CardService/DeleteCard", in, out, opts...)
+func (c *cardServiceClient) GetCardsByBoard(ctx context.Context, in *GetCardsByBoardRequest, opts ...grpc.CallOption) (*GetCardsByBoardResponse, error) {
+	out := new(GetCardsByBoardResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/GetCardsByBoard", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,36 +97,139 @@ func (c *cardServiceClient) MoveCardPosition(ctx context.Context, in *MoveCardPo
 	return out, nil
 }
 
-func (c *cardServiceClient) WatchCardActivity(ctx context.Context, in *WatchCardActivityRequest, opts ...grpc.CallOption) (CardService_WatchCardActivityClient, error) {
-	stream, err := c.cc.NewStream(ctx, &CardService_ServiceDesc.Streams[0], "/cardpb.CardService/WatchCardActivity", opts...)
+func (c *cardServiceClient) UpdateCardName(ctx context.Context, in *UpdateCardNameRequest, opts ...grpc.CallOption) (*UpdateCardNameResponse, error) {
+	out := new(UpdateCardNameResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/UpdateCardName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &cardServiceWatchCardActivityClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type CardService_WatchCardActivityClient interface {
-	Recv() (*WatchCardActivityResponse, error)
-	grpc.ClientStream
-}
-
-type cardServiceWatchCardActivityClient struct {
-	grpc.ClientStream
-}
-
-func (x *cardServiceWatchCardActivityClient) Recv() (*WatchCardActivityResponse, error) {
-	m := new(WatchCardActivityResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *cardServiceClient) UpdateCardDescription(ctx context.Context, in *UpdateCardDescriptionRequest, opts ...grpc.CallOption) (*UpdateCardDescriptionResponse, error) {
+	out := new(UpdateCardDescriptionResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/UpdateCardDescription", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
+}
+
+func (c *cardServiceClient) AddCardLabel(ctx context.Context, in *AddCardLabelRequest, opts ...grpc.CallOption) (*AddCardLabelResponse, error) {
+	out := new(AddCardLabelResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/AddCardLabel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) RemoveCardLabel(ctx context.Context, in *RemoveCardLabelRequest, opts ...grpc.CallOption) (*RemoveCardLabelResponse, error) {
+	out := new(RemoveCardLabelResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/RemoveCardLabel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) SetCardDates(ctx context.Context, in *SetCardDatesRequest, opts ...grpc.CallOption) (*SetCardDatesResponse, error) {
+	out := new(SetCardDatesResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/SetCardDates", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) MarkCardComplete(ctx context.Context, in *MarkCardCompleteRequest, opts ...grpc.CallOption) (*MarkCardCompleteResponse, error) {
+	out := new(MarkCardCompleteResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/MarkCardComplete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) AddCardAttachment(ctx context.Context, in *AddCardAttachmentRequest, opts ...grpc.CallOption) (*AddCardAttachmentResponse, error) {
+	out := new(AddCardAttachmentResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/AddCardAttachment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) RemoveCardAttachment(ctx context.Context, in *RemoveCardAttachmentRequest, opts ...grpc.CallOption) (*RemoveCardAttachmentResponse, error) {
+	out := new(RemoveCardAttachmentResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/RemoveCardAttachment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) AddCardComment(ctx context.Context, in *AddCardCommentRequest, opts ...grpc.CallOption) (*AddCardCommentResponse, error) {
+	out := new(AddCardCommentResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/AddCardComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) RemoveCardComment(ctx context.Context, in *RemoveCardCommentRequest, opts ...grpc.CallOption) (*RemoveCardCommentResponse, error) {
+	out := new(RemoveCardCommentResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/RemoveCardComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) AddCardMembers(ctx context.Context, in *AddCardMembersRequest, opts ...grpc.CallOption) (*AddCardMembersResponse, error) {
+	out := new(AddCardMembersResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/AddCardMembers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) RemoveCardMembers(ctx context.Context, in *RemoveCardMembersRequest, opts ...grpc.CallOption) (*RemoveCardMembersResponse, error) {
+	out := new(RemoveCardMembersResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/RemoveCardMembers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) ArchiveCard(ctx context.Context, in *ArchiveCardRequest, opts ...grpc.CallOption) (*ArchiveCardResponse, error) {
+	out := new(ArchiveCardResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/ArchiveCard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) RestoreCard(ctx context.Context, in *RestoreCardRequest, opts ...grpc.CallOption) (*RestoreCardResponse, error) {
+	out := new(RestoreCardResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/RestoreCard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) DeleteCard(ctx context.Context, in *DeleteCardRequest, opts ...grpc.CallOption) (*DeleteCardResponse, error) {
+	out := new(DeleteCardResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/DeleteCard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // CardServiceServer is the server API for CardService service.
@@ -120,11 +237,25 @@ func (x *cardServiceWatchCardActivityClient) Recv() (*WatchCardActivityResponse,
 // for forward compatibility
 type CardServiceServer interface {
 	CreateCard(context.Context, *CreateCardRequest) (*CreateCardResponse, error)
+	GetCardByID(context.Context, *GetCardByIDRequest) (*GetCardByIDResponse, error)
 	GetCardsByList(context.Context, *GetCardsByListRequest) (*GetCardsByListResponse, error)
-	UpdateCard(context.Context, *UpdateCardRequest) (*UpdateCardResponse, error)
-	DeleteCard(context.Context, *DeleteCardRequest) (*DeleteCardResponse, error)
+	GetCardsByBoard(context.Context, *GetCardsByBoardRequest) (*GetCardsByBoardResponse, error)
 	MoveCardPosition(context.Context, *MoveCardPositionRequest) (*MoveCardPositionResponse, error)
-	WatchCardActivity(*WatchCardActivityRequest, CardService_WatchCardActivityServer) error
+	UpdateCardName(context.Context, *UpdateCardNameRequest) (*UpdateCardNameResponse, error)
+	UpdateCardDescription(context.Context, *UpdateCardDescriptionRequest) (*UpdateCardDescriptionResponse, error)
+	AddCardLabel(context.Context, *AddCardLabelRequest) (*AddCardLabelResponse, error)
+	RemoveCardLabel(context.Context, *RemoveCardLabelRequest) (*RemoveCardLabelResponse, error)
+	SetCardDates(context.Context, *SetCardDatesRequest) (*SetCardDatesResponse, error)
+	MarkCardComplete(context.Context, *MarkCardCompleteRequest) (*MarkCardCompleteResponse, error)
+	AddCardAttachment(context.Context, *AddCardAttachmentRequest) (*AddCardAttachmentResponse, error)
+	RemoveCardAttachment(context.Context, *RemoveCardAttachmentRequest) (*RemoveCardAttachmentResponse, error)
+	AddCardComment(context.Context, *AddCardCommentRequest) (*AddCardCommentResponse, error)
+	RemoveCardComment(context.Context, *RemoveCardCommentRequest) (*RemoveCardCommentResponse, error)
+	AddCardMembers(context.Context, *AddCardMembersRequest) (*AddCardMembersResponse, error)
+	RemoveCardMembers(context.Context, *RemoveCardMembersRequest) (*RemoveCardMembersResponse, error)
+	ArchiveCard(context.Context, *ArchiveCardRequest) (*ArchiveCardResponse, error)
+	RestoreCard(context.Context, *RestoreCardRequest) (*RestoreCardResponse, error)
+	DeleteCard(context.Context, *DeleteCardRequest) (*DeleteCardResponse, error)
 	mustEmbedUnimplementedCardServiceServer()
 }
 
@@ -135,20 +266,62 @@ type UnimplementedCardServiceServer struct {
 func (UnimplementedCardServiceServer) CreateCard(context.Context, *CreateCardRequest) (*CreateCardResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCard not implemented")
 }
+func (UnimplementedCardServiceServer) GetCardByID(context.Context, *GetCardByIDRequest) (*GetCardByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCardByID not implemented")
+}
 func (UnimplementedCardServiceServer) GetCardsByList(context.Context, *GetCardsByListRequest) (*GetCardsByListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCardsByList not implemented")
 }
-func (UnimplementedCardServiceServer) UpdateCard(context.Context, *UpdateCardRequest) (*UpdateCardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateCard not implemented")
-}
-func (UnimplementedCardServiceServer) DeleteCard(context.Context, *DeleteCardRequest) (*DeleteCardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteCard not implemented")
+func (UnimplementedCardServiceServer) GetCardsByBoard(context.Context, *GetCardsByBoardRequest) (*GetCardsByBoardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCardsByBoard not implemented")
 }
 func (UnimplementedCardServiceServer) MoveCardPosition(context.Context, *MoveCardPositionRequest) (*MoveCardPositionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MoveCardPosition not implemented")
 }
-func (UnimplementedCardServiceServer) WatchCardActivity(*WatchCardActivityRequest, CardService_WatchCardActivityServer) error {
-	return status.Errorf(codes.Unimplemented, "method WatchCardActivity not implemented")
+func (UnimplementedCardServiceServer) UpdateCardName(context.Context, *UpdateCardNameRequest) (*UpdateCardNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCardName not implemented")
+}
+func (UnimplementedCardServiceServer) UpdateCardDescription(context.Context, *UpdateCardDescriptionRequest) (*UpdateCardDescriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCardDescription not implemented")
+}
+func (UnimplementedCardServiceServer) AddCardLabel(context.Context, *AddCardLabelRequest) (*AddCardLabelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCardLabel not implemented")
+}
+func (UnimplementedCardServiceServer) RemoveCardLabel(context.Context, *RemoveCardLabelRequest) (*RemoveCardLabelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCardLabel not implemented")
+}
+func (UnimplementedCardServiceServer) SetCardDates(context.Context, *SetCardDatesRequest) (*SetCardDatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetCardDates not implemented")
+}
+func (UnimplementedCardServiceServer) MarkCardComplete(context.Context, *MarkCardCompleteRequest) (*MarkCardCompleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkCardComplete not implemented")
+}
+func (UnimplementedCardServiceServer) AddCardAttachment(context.Context, *AddCardAttachmentRequest) (*AddCardAttachmentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCardAttachment not implemented")
+}
+func (UnimplementedCardServiceServer) RemoveCardAttachment(context.Context, *RemoveCardAttachmentRequest) (*RemoveCardAttachmentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCardAttachment not implemented")
+}
+func (UnimplementedCardServiceServer) AddCardComment(context.Context, *AddCardCommentRequest) (*AddCardCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCardComment not implemented")
+}
+func (UnimplementedCardServiceServer) RemoveCardComment(context.Context, *RemoveCardCommentRequest) (*RemoveCardCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCardComment not implemented")
+}
+func (UnimplementedCardServiceServer) AddCardMembers(context.Context, *AddCardMembersRequest) (*AddCardMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCardMembers not implemented")
+}
+func (UnimplementedCardServiceServer) RemoveCardMembers(context.Context, *RemoveCardMembersRequest) (*RemoveCardMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCardMembers not implemented")
+}
+func (UnimplementedCardServiceServer) ArchiveCard(context.Context, *ArchiveCardRequest) (*ArchiveCardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ArchiveCard not implemented")
+}
+func (UnimplementedCardServiceServer) RestoreCard(context.Context, *RestoreCardRequest) (*RestoreCardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreCard not implemented")
+}
+func (UnimplementedCardServiceServer) DeleteCard(context.Context, *DeleteCardRequest) (*DeleteCardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteCard not implemented")
 }
 func (UnimplementedCardServiceServer) mustEmbedUnimplementedCardServiceServer() {}
 
@@ -181,6 +354,24 @@ func _CardService_CreateCard_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CardService_GetCardByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCardByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).GetCardByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/GetCardByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).GetCardByID(ctx, req.(*GetCardByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CardService_GetCardsByList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCardsByListRequest)
 	if err := dec(in); err != nil {
@@ -199,38 +390,20 @@ func _CardService_GetCardsByList_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CardService_UpdateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateCardRequest)
+func _CardService_GetCardsByBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCardsByBoardRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CardServiceServer).UpdateCard(ctx, in)
+		return srv.(CardServiceServer).GetCardsByBoard(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cardpb.CardService/UpdateCard",
+		FullMethod: "/cardpb.CardService/GetCardsByBoard",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CardServiceServer).UpdateCard(ctx, req.(*UpdateCardRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CardService_DeleteCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteCardRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CardServiceServer).DeleteCard(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/cardpb.CardService/DeleteCard",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CardServiceServer).DeleteCard(ctx, req.(*DeleteCardRequest))
+		return srv.(CardServiceServer).GetCardsByBoard(ctx, req.(*GetCardsByBoardRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -253,25 +426,274 @@ func _CardService_MoveCardPosition_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CardService_WatchCardActivity_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(WatchCardActivityRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _CardService_UpdateCardName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCardNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(CardServiceServer).WatchCardActivity(m, &cardServiceWatchCardActivityServer{stream})
+	if interceptor == nil {
+		return srv.(CardServiceServer).UpdateCardName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/UpdateCardName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).UpdateCardName(ctx, req.(*UpdateCardNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type CardService_WatchCardActivityServer interface {
-	Send(*WatchCardActivityResponse) error
-	grpc.ServerStream
+func _CardService_UpdateCardDescription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCardDescriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).UpdateCardDescription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/UpdateCardDescription",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).UpdateCardDescription(ctx, req.(*UpdateCardDescriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type cardServiceWatchCardActivityServer struct {
-	grpc.ServerStream
+func _CardService_AddCardLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddCardLabelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).AddCardLabel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/AddCardLabel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).AddCardLabel(ctx, req.(*AddCardLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func (x *cardServiceWatchCardActivityServer) Send(m *WatchCardActivityResponse) error {
-	return x.ServerStream.SendMsg(m)
+func _CardService_RemoveCardLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveCardLabelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).RemoveCardLabel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/RemoveCardLabel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).RemoveCardLabel(ctx, req.(*RemoveCardLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_SetCardDates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetCardDatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).SetCardDates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/SetCardDates",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).SetCardDates(ctx, req.(*SetCardDatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_MarkCardComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkCardCompleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).MarkCardComplete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/MarkCardComplete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).MarkCardComplete(ctx, req.(*MarkCardCompleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_AddCardAttachment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddCardAttachmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).AddCardAttachment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/AddCardAttachment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).AddCardAttachment(ctx, req.(*AddCardAttachmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_RemoveCardAttachment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveCardAttachmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).RemoveCardAttachment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/RemoveCardAttachment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).RemoveCardAttachment(ctx, req.(*RemoveCardAttachmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_AddCardComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddCardCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).AddCardComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/AddCardComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).AddCardComment(ctx, req.(*AddCardCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_RemoveCardComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveCardCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).RemoveCardComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/RemoveCardComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).RemoveCardComment(ctx, req.(*RemoveCardCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_AddCardMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddCardMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).AddCardMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/AddCardMembers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).AddCardMembers(ctx, req.(*AddCardMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_RemoveCardMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveCardMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).RemoveCardMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/RemoveCardMembers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).RemoveCardMembers(ctx, req.(*RemoveCardMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_ArchiveCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ArchiveCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).ArchiveCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/ArchiveCard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).ArchiveCard(ctx, req.(*ArchiveCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_RestoreCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).RestoreCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/RestoreCard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).RestoreCard(ctx, req.(*RestoreCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_DeleteCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).DeleteCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cardpb.CardService/DeleteCard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).DeleteCard(ctx, req.(*DeleteCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // CardService_ServiceDesc is the grpc.ServiceDesc for CardService service.
@@ -286,28 +708,82 @@ var CardService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CardService_CreateCard_Handler,
 		},
 		{
+			MethodName: "GetCardByID",
+			Handler:    _CardService_GetCardByID_Handler,
+		},
+		{
 			MethodName: "GetCardsByList",
 			Handler:    _CardService_GetCardsByList_Handler,
 		},
 		{
-			MethodName: "UpdateCard",
-			Handler:    _CardService_UpdateCard_Handler,
-		},
-		{
-			MethodName: "DeleteCard",
-			Handler:    _CardService_DeleteCard_Handler,
+			MethodName: "GetCardsByBoard",
+			Handler:    _CardService_GetCardsByBoard_Handler,
 		},
 		{
 			MethodName: "MoveCardPosition",
 			Handler:    _CardService_MoveCardPosition_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "WatchCardActivity",
-			Handler:       _CardService_WatchCardActivity_Handler,
-			ServerStreams: true,
+			MethodName: "UpdateCardName",
+			Handler:    _CardService_UpdateCardName_Handler,
+		},
+		{
+			MethodName: "UpdateCardDescription",
+			Handler:    _CardService_UpdateCardDescription_Handler,
+		},
+		{
+			MethodName: "AddCardLabel",
+			Handler:    _CardService_AddCardLabel_Handler,
+		},
+		{
+			MethodName: "RemoveCardLabel",
+			Handler:    _CardService_RemoveCardLabel_Handler,
+		},
+		{
+			MethodName: "SetCardDates",
+			Handler:    _CardService_SetCardDates_Handler,
+		},
+		{
+			MethodName: "MarkCardComplete",
+			Handler:    _CardService_MarkCardComplete_Handler,
+		},
+		{
+			MethodName: "AddCardAttachment",
+			Handler:    _CardService_AddCardAttachment_Handler,
+		},
+		{
+			MethodName: "RemoveCardAttachment",
+			Handler:    _CardService_RemoveCardAttachment_Handler,
+		},
+		{
+			MethodName: "AddCardComment",
+			Handler:    _CardService_AddCardComment_Handler,
+		},
+		{
+			MethodName: "RemoveCardComment",
+			Handler:    _CardService_RemoveCardComment_Handler,
+		},
+		{
+			MethodName: "AddCardMembers",
+			Handler:    _CardService_AddCardMembers_Handler,
+		},
+		{
+			MethodName: "RemoveCardMembers",
+			Handler:    _CardService_RemoveCardMembers_Handler,
+		},
+		{
+			MethodName: "ArchiveCard",
+			Handler:    _CardService_ArchiveCard_Handler,
+		},
+		{
+			MethodName: "RestoreCard",
+			Handler:    _CardService_RestoreCard_Handler,
+		},
+		{
+			MethodName: "DeleteCard",
+			Handler:    _CardService_DeleteCard_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "card.proto",
 }

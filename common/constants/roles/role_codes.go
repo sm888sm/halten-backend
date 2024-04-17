@@ -1,4 +1,4 @@
-package common
+package roles
 
 const (
 	AdminRole    = "admin"

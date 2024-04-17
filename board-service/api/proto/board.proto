@@ -14,8 +14,8 @@ message Pagination {
 }
 
 message Board {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
+    uint64 userID = 2;
     string name = 3;
     string visibility = 4;
     repeated Permission permissions = 5;
@@ -27,34 +27,56 @@ message Board {
 }
 
 message List {
-    uint64 id = 1;
-    uint64 board_id = 2;
+    uint64 listID = 1;
+    uint64 boardID = 2;
     string name = 3;
     int32 position = 4;
 }
 
 message Card {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 list_id = 3;
+    uint64 cardID  = 1;
+    uint64 boardID  = 2;
+    uint64 listID  = 3;
     string name = 4;
     string description = 5;
-    int32 position = 6;
-    google.protobuf.Timestamp start_date = 7;
-    google.protobuf.Timestamp due_date = 8;
-    Attachment attachment = 9;
+    int64 position = 6;
+    repeated uint64 attachments = 7;
+    repeated uint64 labels = 8;
+    repeated uint64 members = 9;
+    bool isCompleted = 10;
+    google.protobuf.Timestamp start_date = 11;
+    google.protobuf.Timestamp due_date = 12;
+    google.protobuf.Timestamp created_at = 13;
+    google.protobuf.Timestamp updated_at = 14;
+}
+
+message CardMeta {
+    uint64 cardID  = 1;
+    uint64 boardID  = 2;
+    uint64 listID  = 3;
+    string name = 4;
+    int64 position = 5;
+    repeated uint64 labels = 6;
+    repeated uint64 members = 7;
+    uint64 totalAttachment = 8;
+    uint64 totalComment = 9;
+    bool isCompleted = 10;
+    google.protobuf.Timestamp start_date = 11;
+    google.protobuf.Timestamp due_date = 12;
+    google.protobuf.Timestamp created_at = 13;
+    google.protobuf.Timestamp updated_at = 14;
 }
 
 message Label {
-    uint64 id = 1;
+    uint64 labelID = 1;
     string name = 2;
     string color = 3;
-    uint64 board_id = 4;
+    uint64 boardID = 4;
 }
 
 message Attachment {
-    uint64 id = 1;
-    uint64 card_id = 2;
+    uint64 attachmentID = 1;
+    uint64 cardID = 2;
     string file_name = 3;
     string file_path = 4;
     string type = 5;
@@ -62,8 +84,8 @@ message Attachment {
 }
 
 message BoardMeta {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
+    uint64 userID = 2;
     string name = 3;
     string visibility = 4;
     google.protobuf.Timestamp created_at = 5;
@@ -71,33 +93,31 @@ message BoardMeta {
 }
 
 message Permission {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
+    uint64 permissionID = 1;
+    uint64 boardID = 2;
+    uint64 userID = 3;
     string role = 4;
 }
 
 message User {
-    uint64 user_id = 1;
+    uint64 userID = 1;
     string user_name = 2;
-    string role = 3;
+    string full_name = 3;
+    string role = 4;
 }
 
 // Request and Response Messages
 message CreateBoardRequest {
-    uint64 user_id = 2;
     string name = 3;
 }
 
 message CreateBoardResponse {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    string name = 3;
+    uint64 boardID = 1;
+    string name = 2;
 }
 
 message GetBoardByIDRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
 }
 
 message GetBoardByIDResponse {
@@ -105,7 +125,7 @@ message GetBoardByIDResponse {
 }
 
 message GetBoardUsersRequest {
-    uint64 id = 1;
+    uint64 boardID = 1;
 }
 
 message GetBoardUsersResponse {
@@ -113,7 +133,7 @@ message GetBoardUsersResponse {
 }
 
 message GetBoardListRequest {
-    uint64 user_id = 1;
+    uint64 userID = 1;
     uint64 page_number = 2;
     uint64 page_size = 3;
 
@@ -125,20 +145,17 @@ message GetBoardListResponse {
 }
 
 message UpdateBoardRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
     string name = 3;
 }
 
 message UpdateBoardResponse {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
     string name = 3;
 }
 
 message DeleteBoardRequest {
     uint64 id = 1;
-    uint64 user_id = 2;
 }
 
 message DeleteBoardResponse {
@@ -146,30 +163,28 @@ message DeleteBoardResponse {
 }
 
 message AddUsersRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    repeated uint64 user_ids = 3;
+    uint64 boardID = 1;
+    uint64 userID = 2;
+    repeated uint64 userIDs = 3;
     string role = 4;
-  }
+}
   
-  message AddUsersResponse {
+message AddUsersResponse {
     string message = 1;
-  }
+}
   
-  message RemoveUsersRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    repeated uint64 user_ids = 3;
-  }
-  
-  message RemoveUsersResponse {
+message RemoveUsersRequest {
+    uint64 boardID = 1;
+    repeated uint64 userIDs = 3;
+}
+
+message RemoveUsersResponse {
     string message = 1;
-  }
+}
 
 message AssignUserRoleRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    uint64 assign_user_id = 3;
+    uint64 boardID = 1;
+    uint64 assign_userID = 3;
     string role = 4;
 }
 
@@ -178,19 +193,39 @@ message AssignUserRoleResponse {
 }
 
 message ChangeBoardOwnerRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    uint64 current_owner_id = 3;
-    uint64 new_owner_id = 4;
+    uint64 boardID = 1;
+    uint64 current_ownerID = 3;
+    uint64 new_ownerID = 4;
 }
 
 message ChangeBoardOwnerResponse {
     string message = 1;
 }
 
+message GetBoardPermissionByCardRequest {
+    uint64 cardID = 2;
+    uint64 userID = 3;
+}
+
+message GetBoardPermissionByCardResponse {
+    uint64 boardID  = 1;
+    string visibility = 2;
+    Permission Permission = 3;
+}
+
+message GetBoardPermissionByListRequest {
+    uint64 listID = 2;
+    uint64 userID = 3;
+}
+
+message GetBoardPermissionByListResponse {
+    uint64 boardID  = 1;
+    string visibility = 2;
+    Permission Permission = 3;
+}
+
 message ArchiveBoardRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
 }
 
 message ArchiveBoardResponse {
@@ -198,8 +233,7 @@ message ArchiveBoardResponse {
 }
 
 message RestoreBoardRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
+    uint64 boardID = 1;
 }
 
 message RestoreBoardResponse {

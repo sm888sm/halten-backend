@@ -5,9 +5,12 @@ import (
 	"math"
 
 	internal_models "github.com/sm888sm/halten-backend/board-service/internal/models"
-	"github.com/sm888sm/halten-backend/common"
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
+	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
-	models "github.com/sm888sm/halten-backend/models"
+	"github.com/sm888sm/halten-backend/models"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -32,7 +35,7 @@ func (r *GormBoardRepository) CreateBoard(board *models.Board, userID uint) (*mo
 		permission := models.Permission{
 			UserID:  userID,
 			BoardID: board.ID,
-			Role:    common.OwnerRole,
+			Role:    roles.OwnerRole,
 		}
 
 		if err := tx.Create(&permission).Error; err != nil {
@@ -53,14 +56,13 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 	var board models.Board
 	var permission models.Permission
 
+	// TODO exclude list and card
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Preload("Permissions").
-			Preload("Lists").
-			Preload("Cards").
+		if err := tx.
 			Preload("Labels").
 			First(&board, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -68,7 +70,7 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 		if board.Visibility == "private" {
 			if err := tx.Where("board_id = ? AND user_id = ?", id, userID).First(&permission).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return errorhandler.NewAPIError(errorhandler.ErrForbidden, "You do not have permission to access this board")
+					return errorhandler.NewAPIError(httpcodes.ErrForbidden, "You do not have permission to access this board")
 				}
 				return errorhandler.NewGrpcInternalError()
 			}
@@ -84,7 +86,7 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 	return &board, nil
 }
 
-func (r *GormBoardRepository) GetBoardList(userID uint, pageNumber, pageSize int) (*internal_models.BoardList, error) {
+func (r *GormBoardRepository) GetBoardList(pageNumber, pageSize int, userID uint) (*internal_models.BoardList, error) {
 	var boards []models.Board
 	var totalItems int64
 	offset := (pageNumber - 1) * pageSize
@@ -124,6 +126,78 @@ func (r *GormBoardRepository) GetBoardList(userID uint, pageNumber, pageSize int
 	}, nil
 }
 
+func (r *GormBoardRepository) GetBoardPermissionByCard(params GetBoardPermissionByCardParams) (*GetBoardPermissionByCardResult, error) {
+	var card models.Card
+	var board models.Board
+	var permission models.Permission
+
+	// Find the card
+	if err := r.db.First(&card, params.CardID).Error; err != nil {
+		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Permission not found").Error())
+	}
+
+	// Find the board by card
+	if err := r.db.First(&board, card.BoardID).Error; err != nil {
+		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "BPermission not found").Error())
+	}
+
+	// Find the permission by board, regardless of permission, return it and the board visibility
+	if err := r.db.Where("board_id = ? AND user_id = ?", board.ID, params.UserID).First(&permission).Error; err != nil {
+		// If permission not found, return nil permission but still return board ID and visibility
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &GetBoardPermissionByCardResult{
+				BoardID:    board.ID,
+				Visibility: board.Visibility,
+				Permission: nil,
+			}, nil
+		}
+		// If other error, return the error
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
+	return &GetBoardPermissionByCardResult{
+		BoardID:    board.ID,
+		Visibility: board.Visibility,
+		Permission: &permission,
+	}, nil
+}
+
+func (r *GormBoardRepository) GetBoardPermissionByList(params GetBoardPermissionByListParams) (*GetBoardPermissionByListResult, error) {
+	var list models.List
+	var board models.Board
+	var permission models.Permission
+
+	// Find the list
+	if err := r.db.First(&list, params.ListID).Error; err != nil {
+		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+	}
+
+	// Find the board by list
+	if err := r.db.First(&board, list.BoardID).Error; err != nil {
+		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
+	}
+
+	// Find the permission by board, regardless of permission, return it and the board visibility
+	if err := r.db.Where("board_id = ? AND user_id = ?", board.ID, params.UserID).First(&permission).Error; err != nil {
+		// If permission not found, return nil permission but still return board ID and visibility
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &GetBoardPermissionByListResult{
+				BoardID:    board.ID,
+				Visibility: board.Visibility,
+				Permission: nil,
+			}, nil
+		}
+		// If other error, return the error
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
+	return &GetBoardPermissionByListResult{
+		BoardID:    board.ID,
+		Visibility: board.Visibility,
+		Permission: &permission,
+	}, nil
+}
+
 func (r *GormBoardRepository) UpdateBoard(userID uint, id uint, name string) error {
 	var board models.Board
 	var permission models.Permission
@@ -131,7 +205,7 @@ func (r *GormBoardRepository) UpdateBoard(userID uint, id uint, name string) err
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&board, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -140,8 +214,8 @@ func (r *GormBoardRepository) UpdateBoard(userID uint, id uint, name string) err
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		if permission.Role != common.AdminRole && permission.Role != common.OwnerRole {
-			return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Only the owner and admin can update the board")
+		if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
+			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can update the board")
 		}
 
 		board.Name = name
@@ -159,13 +233,13 @@ func (r *GormBoardRepository) DeleteBoard(userID uint, id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&board, id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
 
 		if board.UserID != userID {
-			return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Only the owner can delete the board")
+			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner can delete the board")
 		}
 
 		if err := tx.Delete(&board).Error; err != nil {
@@ -202,8 +276,8 @@ func (r *GormBoardRepository) AddBoardUsers(userID uint, boardID uint, userIDs [
 		return errorhandler.NewGrpcInternalError()
 	}
 
-	if permission.Role != common.AdminRole && permission.Role != common.OwnerRole {
-		return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Only the owner and admin can add users to the board")
+	if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
+		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can add users to the board")
 	}
 	existingUsersCount := 0
 	for _, userID := range userIDs {
@@ -238,7 +312,7 @@ func (r *GormBoardRepository) AddBoardUsers(userID uint, boardID uint, userIDs [
 	}
 
 	if existingUsersCount == len(userIDs) {
-		return errorhandler.NewAPIError(errorhandler.ErrConflict, "All users are already on the board")
+		return errorhandler.NewAPIError(httpcodes.ErrConflict, "All users are already on the board")
 	}
 
 	return nil
@@ -251,8 +325,8 @@ func (r *GormBoardRepository) RemoveBoardUsers(userID uint, boardID uint, userID
 		return errorhandler.NewGrpcInternalError()
 	}
 
-	if permission.Role != common.AdminRole && permission.Role != common.OwnerRole {
-		return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Only the owner and admin can remove users from the board")
+	if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
+		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can remove users from the board")
 	}
 
 	nonExistingUsersCount := 0
@@ -282,7 +356,7 @@ func (r *GormBoardRepository) RemoveBoardUsers(userID uint, boardID uint, userID
 	}
 
 	if nonExistingUsersCount == len(userIDs) {
-		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "None of the users are on the board")
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "None of the users are on the board")
 	}
 
 	return nil
@@ -305,7 +379,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(boardID uint, currentOwnerID uint
 		var newOwnerPermission models.Permission
 		if err := tx.Where("board_id = ? AND user_id = ?", boardID, newOwnerID).First(&newOwnerPermission).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "New owner must be a member of the board")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "New owner must be a member of the board")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -316,7 +390,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(boardID uint, currentOwnerID uint
 		}
 
 		if board.UserID != currentOwnerID {
-			return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Only the owner can change the owner of the board")
+			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner can change the owner of the board")
 		}
 
 		board.UserID = newOwnerID
@@ -328,7 +402,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(boardID uint, currentOwnerID uint
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		if err := tx.Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, newOwnerID).Update("role", common.OwnerRole).Error; err != nil {
+		if err := tx.Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, newOwnerID).Update("role", roles.OwnerRole).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
@@ -342,7 +416,7 @@ func (r *GormBoardRepository) ArchiveBoard(userID, boardID uint) error {
 	board := &models.Board{}
 	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
 	if err != nil {
-		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 	}
 	board.IsArchived = true
 	return r.db.Save(board).Error
@@ -352,7 +426,7 @@ func (r *GormBoardRepository) RestoreBoard(userID, boardID uint) error {
 	board := &models.Board{}
 	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
 	if err != nil {
-		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "Board not found")
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 	}
 	board.IsArchived = false
 	return r.db.Save(board).Error

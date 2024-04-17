@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
@@ -47,19 +49,20 @@ func NewBoardHandler(services *external_services.Services) *BoardHandler {
 }
 
 func (h *BoardHandler) CreateBoard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	userId := user.(*pb_user.User).Id
 
 	var input CreateBoardInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
 		return
 	}
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
 	boardService, err := h.services.GetBoardClient()
 	if err != nil {
@@ -68,10 +71,10 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	}
 
 	req := &pb_board.CreateBoardRequest{
-		UserId: userId,
+		UserID: userID,
 		Name:   input.Name,
 	}
-	_, err = boardService.CreateBoard(c, req)
+	_, err = boardService.CreateBoard(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
@@ -81,15 +84,13 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 }
 
 func (h *BoardHandler) GetBoardByID(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
-
-	boardIDStr := c.Param("id")
+	boardIDStr := c.Param("board-id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
@@ -102,8 +103,8 @@ func (h *BoardHandler) GetBoardByID(c *gin.Context) {
 		return
 	}
 
-	req := &pb_board.GetBoardByIDRequest{Id: boardID, UserId: uint64(userId)}
-	resp, err := boardService.GetBoardByID(c, req)
+	req := &pb_board.GetBoardByIDRequest{BoardID: boardID, UserID: userID}
+	resp, err := boardService.GetBoardByID(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
@@ -113,13 +114,11 @@ func (h *BoardHandler) GetBoardByID(c *gin.Context) {
 }
 
 func (h *BoardHandler) GetBoardList(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	userId := user.(*pb_user.User).Id
 
 	pageNumberStr, pageSizeStr := c.DefaultQuery("page_number", "1"), c.DefaultQuery("page_size", "10")
 
@@ -135,6 +134,9 @@ func (h *BoardHandler) GetBoardList(c *gin.Context) {
 		return
 	}
 
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
 	boardService, err := h.services.GetBoardClient()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
@@ -142,11 +144,11 @@ func (h *BoardHandler) GetBoardList(c *gin.Context) {
 	}
 
 	req := &pb_board.GetBoardListRequest{
-		UserId:     uint64(userId),
+		UserID:     userID,
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	}
-	resp, err := boardService.GetBoardList(c, req)
+	resp, err := boardService.GetBoardList(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
@@ -170,7 +172,7 @@ func (h *BoardHandler) UpdateBoard(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -213,7 +215,7 @@ func (h *BoardHandler) DeleteBoard(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -248,7 +250,7 @@ func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -290,7 +292,7 @@ func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -358,7 +360,7 @@ func (h *BoardHandler) AssignBoardUserRole(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -401,7 +403,7 @@ func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)

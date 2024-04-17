@@ -3,7 +3,7 @@ package userpb;
 option go_package = "github.com/sm888sm/halten-backend/user-service/pb/user";
 // Data Structures (Messages)
 message User {
-    uint64 id = 1;
+    uint64 userID = 1;
     string username = 2;
     string email = 3;
 }
@@ -14,12 +14,12 @@ message CreateUserRequest {
     string email = 3;
 }
 message CreateUserResponse {
-    uint64 id = 1;
+    uint64 userID = 1;
     string username = 2;
 }
 // Change Password
 message UpdatePasswordRequest {
-    uint64 id = 1; // Updated
+    uint64 userID = 1; // Updated
     string newPassword = 2; // Updated
 }
 message UpdatePasswordResponse {
@@ -27,7 +27,7 @@ message UpdatePasswordResponse {
 }
 // Change E-mail
 message UpdateEmailRequest {
-    uint64 id = 1; // Updated
+    uint64 userID = 1; // Updated
     string newEmail = 2; // Updated
 }
 message UpdateEmailResponse {
@@ -43,7 +43,7 @@ message UpdateUsernameResponse {
 }
 // Find by ID
 message GetUserByIDRequest {
-    uint64 id = 1;
+    uint64 userID = 1;
 }
 message GetUserByIDResponse {
     User user = 1;

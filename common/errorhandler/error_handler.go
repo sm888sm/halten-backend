@@ -59,8 +59,23 @@ func NewAPIError(status int, message string, errors ...FieldError) *APIError {
 	}
 }
 
+func CreateAPIErrorFromFieldErrors(fieldErrors map[string]FieldError) *APIError {
+	if len(fieldErrors) > 0 {
+		errorsSlice := make([]FieldError, 0, len(fieldErrors))
+		for _, err := range fieldErrors {
+			errorsSlice = append(errorsSlice, err)
+		}
+		return NewAPIError(http.StatusBadRequest, "Invalid request parameters", errorsSlice...)
+	}
+	return nil
+}
+
 func NewGrpcInternalError() error {
 	return status.Errorf(codes.Internal, NewAPIError(http.StatusInternalServerError, "Internal server error").Error())
+}
+
+func NewGrpcBadRequestError() error {
+	return status.Errorf(codes.Internal, NewAPIError(http.StatusInternalServerError, "Bad Request").Error())
 }
 
 func NewHttpInternalError() *APIError {

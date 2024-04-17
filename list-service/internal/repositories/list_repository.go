@@ -4,7 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/sm888sm/halten-backend/common"
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
+	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	models "github.com/sm888sm/halten-backend/models"
 
@@ -27,7 +28,7 @@ func (r *GormListRepository) CreateList(list *models.List, userID uint) error {
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(list).Error; err != nil {
-			return errorhandler.NewAPIError(errorhandler.ErrBadRequest, err.Error())
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, err.Error())
 		}
 		return nil
 	})
@@ -41,7 +42,7 @@ func (r *GormListRepository) GetList(id uint, boardID uint, userID uint) (*model
 	var list models.List
 	if err := r.db.Where("id = ? AND board_id = ?", id).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errorhandler.NewAPIError(errorhandler.ErrNotFound, "List not found")
+			return nil, errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 		}
 		return nil, errorhandler.NewGrpcInternalError()
 	}
@@ -70,7 +71,7 @@ func (r *GormListRepository) UpdateList(id uint, name string, boardID uint, user
 	var existingList models.List
 	if err := r.db.Where("id = ? AND board_id = ?", id, boardID).First(&existingList).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(errorhandler.ErrNotFound, "List not found")
+			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 		}
 		return errorhandler.NewGrpcInternalError()
 	}
@@ -91,7 +92,7 @@ func (r *GormListRepository) DeleteList(id uint, boardID uint, userID uint) erro
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id = ? AND board_id = ?", id, boardID).Delete(&models.List{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "List not found")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -107,7 +108,7 @@ func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID 
 	var count int64
 	r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", id, boardID).Count(&count)
 	if count == 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrNotFound, "List not found")
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
@@ -115,7 +116,7 @@ func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID 
 		var lists []*models.List
 		if err := tx.Where("board_id = ?", boardID).Find(&lists).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(errorhandler.ErrNotFound, "List not found")
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -150,14 +151,14 @@ func (r *GormListRepository) checkPermission(boardID uint, userID uint) error {
 	var permission models.Permission
 	if err := r.db.Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(errorhandler.ErrForbidden, "Permission not found")
+			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
 		}
 		return err
 	}
 
-	if permission.Role == common.OwnerRole || permission.Role == common.AdminRole || permission.Role == common.MemberRole {
+	if permission.Role == roles.OwnerRole || permission.Role == roles.AdminRole || permission.Role == roles.MemberRole {
 		return nil
 	}
 
-	return errorhandler.NewAPIError(errorhandler.ErrForbidden, "User does not have permission to perform this operation")
+	return errorhandler.NewAPIError(httpcodes.ErrForbidden, "User does not have permission to perform this operation")
 }

@@ -1,4 +1,4 @@
-package errorhandler
+package httpcodes
 
 const (
 	ErrBadRequest                  = 400

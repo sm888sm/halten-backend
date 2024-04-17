@@ -41,17 +41,17 @@ func (s *UserService) CreateUser(ctx context.Context, req *pb_user.CreateUserReq
 	}
 
 	return &pb_user.CreateUserResponse{
-		Id:       uint64(user.ID),
+		UserID:   uint64(user.ID),
 		Username: user.Username}, nil
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, req *pb_user.GetUserByIDRequest) (*pb_user.GetUserByIDResponse, error) {
-	user, err := s.userRepo.GetUserByID(int(req.Id))
+	user, err := s.userRepo.GetUserByID(int(req.UserID))
 	if err != nil {
 		return nil, err
 	}
 	pbUser := &pb_user.User{
-		Id:       uint64(user.ID),
+		UserID:   uint64(user.ID),
 		Username: user.Username,
 		Email:    user.Email,
 		// Add other fields as necessary
@@ -66,7 +66,7 @@ func (s *UserService) GetUserByUsername(ctx context.Context, req *pb_user.GetUse
 		return nil, err
 	}
 	pbUser := &pb_user.User{
-		Id:       uint64(user.ID),
+		UserID:   uint64(user.ID),
 		Username: user.Username,
 		Email:    user.Email,
 		// Add other fields as necessary
@@ -75,7 +75,7 @@ func (s *UserService) GetUserByUsername(ctx context.Context, req *pb_user.GetUse
 }
 
 func (s *UserService) UpdateEmail(ctx context.Context, req *pb_user.UpdateEmailRequest) (*pb_user.UpdateEmailResponse, error) {
-	err := s.userRepo.UpdateEmail(uint(req.Id), req.NewEmail) // Updated
+	err := s.userRepo.UpdateEmail(uint(req.UserID), req.NewEmail) // Updated
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, req *pb_user.UpdateEmailR
 }
 
 func (s *UserService) UpdatePassword(ctx context.Context, req *pb_user.UpdatePasswordRequest) (*pb_user.UpdatePasswordResponse, error) {
-	err := s.userRepo.UpdatePassword(uint(req.Id), req.NewPassword) // Updated
+	err := s.userRepo.UpdatePassword(uint(req.UserID), req.NewPassword) // Updated
 	if err != nil {
 		return nil, err
 	}

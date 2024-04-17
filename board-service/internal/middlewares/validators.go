@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	pb "github.com/sm888sm/halten-backend/board-service/api/pb"
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"google.golang.org/grpc"
 )
@@ -68,7 +69,7 @@ func validateCreateBoardRequest(req *pb.CreateBoardRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -85,7 +86,7 @@ func validateGetBoardByIDRequest(req *pb.GetBoardByIDRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -116,7 +117,7 @@ func validateGetBoardListRequest(req *pb.GetBoardListRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -133,7 +134,7 @@ func validateGetBoardUsersRequest(req *pb.GetBoardUsersRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -157,7 +158,7 @@ func validateUpdateBoardRequest(req *pb.UpdateBoardRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -174,7 +175,7 @@ func validateDeleteBoardRequest(req *pb.DeleteBoardRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -206,12 +207,12 @@ func validateAddUsersRequest(req *pb.AddUsersRequest) error {
 
 	for _, userId := range req.UserIds {
 		if !isValidAccountNumber(userId) {
-			return errorhandler.NewAPIError(errorhandler.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
 		}
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -243,12 +244,12 @@ func validateRemoveUsersRequest(req *pb.RemoveUsersRequest) error {
 
 	for _, userId := range req.UserIds {
 		if !isValidAccountNumber(userId) {
-			return errorhandler.NewAPIError(errorhandler.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
 		}
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil

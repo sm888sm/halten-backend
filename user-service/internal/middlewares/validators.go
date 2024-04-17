@@ -5,6 +5,7 @@ import (
 
 	pb "github.com/sm888sm/halten-backend/user-service/api/pb"
 
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 
 	"google.golang.org/grpc"
@@ -79,15 +80,15 @@ func validateCreateUserRequest(req *pb.CreateUserRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
 }
 
 func validateGetUserByIDRequest(req *pb.GetUserByIDRequest) error {
-	if req.Id == 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+	if req.UserID == 0 {
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "id",
 			Message: "ID cannot be empty",
@@ -101,7 +102,7 @@ func validateGetUserByIDRequest(req *pb.GetUserByIDRequest) error {
 
 func validateGetUserByUsernameRequest(req *pb.GetUserByUsernameRequest) error {
 	if req.Username == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "username",
 			Message: "Username cannot be empty",
@@ -113,7 +114,7 @@ func validateGetUserByUsernameRequest(req *pb.GetUserByUsernameRequest) error {
 
 func validateUpdateUsernameRequest(req *pb.UpdateUsernameRequest) error {
 	if req.NewUsername == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "newUsername",
 			Message: "New username cannot be empty",
@@ -127,7 +128,7 @@ func validateUpdateUsernameRequest(req *pb.UpdateUsernameRequest) error {
 
 func validateUpdateEmailRequest(req *pb.UpdateEmailRequest) error {
 	if req.NewEmail == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "newEmail",
 			Message: "New email cannot be empty",
@@ -139,7 +140,7 @@ func validateUpdateEmailRequest(req *pb.UpdateEmailRequest) error {
 
 func validateUpdatePasswordRequest(req *pb.UpdatePasswordRequest) error {
 	if req.NewPassword == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "newPassword",
 			Message: "New password cannot be empty",
@@ -151,7 +152,7 @@ func validateUpdatePasswordRequest(req *pb.UpdatePasswordRequest) error {
 
 func validateConfirmNewEmailRequest(req *pb.ConfirmNewEmailRequest) error {
 	if req.Username == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "username",
 			Message: "username cannot be empty",
@@ -163,7 +164,7 @@ func validateConfirmNewEmailRequest(req *pb.ConfirmNewEmailRequest) error {
 
 func validateResendConfirmationEmailRequest(req *pb.ResendConfirmationEmailRequest) error {
 	if req.Username == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "email",
 			Message: "Email cannot be empty",
@@ -195,7 +196,7 @@ func validateLoginRequest(req *pb.LoginRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -203,7 +204,7 @@ func validateLoginRequest(req *pb.LoginRequest) error {
 
 func validateRefreshTokenRequest(req *pb.RefreshTokenRequest) error {
 	if req.RefreshToken == "" {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "refreshToken",
 			Message: "Refresh token cannot be empty",

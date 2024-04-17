@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	pb "github.com/sm888sm/halten-backend/list-service/api/pb"
 	"google.golang.org/grpc"
@@ -61,7 +62,7 @@ func validateCreateListRequest(req *pb.CreateListRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -85,7 +86,7 @@ func validateGetListsByBoardRequest(req *pb.GetListsByBoardRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -116,7 +117,7 @@ func validateUpdateListRequest(req *pb.UpdateListRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -147,7 +148,7 @@ func validateDeleteListRequest(req *pb.DeleteListRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil
@@ -185,7 +186,7 @@ func validateMoveListPositionRequest(req *pb.MoveListPositionRequest) error {
 	}
 
 	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid validation", fieldErrors...)
+		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
 
 	return nil

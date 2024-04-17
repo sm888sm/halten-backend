@@ -5,56 +5,28 @@ option go_package = "github.com/sm888sm/halten-backend/card-service/pb/card";
 
 // Data Structures (Messages)
 message Card {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 list_id = 3;
+    uint64 cardID  = 1;
+    uint64 boardID  = 2;
+    uint64 listID  = 3;
     string name = 4;
     string description = 5;
     int64 position = 6;
-    google.protobuf.Timestamp start_date = 7;
-    google.protobuf.Timestamp due_date = 8;
-    repeated uint64 attachments = 10;
-    repeated uint64 labels = 11;
-    repeated uint64 members = 12;
-}
-
-message Label {
-    uint64 id = 1;
-    string name = 2;
-    string color = 3;
-    uint64 board_id = 4;
-}
-
-message Attachment {
-    uint64 id = 1;
-    uint64 card_id = 2;
-    string file_name = 3;
-    string file_path = 4;
-    string type = 5;
-    string thumbnail = 6;
-}
-
-message User {
-    uint64 user_id = 1;
-    string user_name = 2;
-    string role = 3;
-}
-
-message Comment {
-    uint64 id = 1;
-    uint64 card_id = 2;
-    User user = 3;
-    string content = 4;
-    google.protobuf.Timestamp created_at = 5;
-    google.protobuf.Timestamp updated_at = 6;
+    repeated uint64 attachments = 7;
+    repeated uint64 labels = 8;
+    repeated uint64 members = 9;
+    bool isCompleted = 10;
+    google.protobuf.Timestamp start_date = 11;
+    google.protobuf.Timestamp due_date = 12;
+    google.protobuf.Timestamp created_at = 13;
+    google.protobuf.Timestamp updated_at = 14;
 }
 
 message CardMeta {
-    uint64 id = 1;
-    uint64 list_id = 2;
-    uint64 board_id = 3;
+    uint64 cardID  = 1;
+    uint64 boardID  = 2;
+    uint64 listID  = 3;
     string name = 4;
-    int32 position = 5;
+    int64 position = 5;
     repeated uint64 labels = 6;
     repeated uint64 members = 7;
     uint64 totalAttachment = 8;
@@ -66,94 +38,245 @@ message CardMeta {
     google.protobuf.Timestamp updated_at = 14;
 }
 
-message CreateCardRequest {
-    uint64 id = 1;
-    uint64 list_id = 2;
-    string name = 3;
-    uint64 user_id = 4;
-    uint64 board_id = 5;
+message Label {
+    uint64 cardID  = 1;
+    string name = 2;
+    string color = 3;
+    uint64 boardID  = 4;
 }
 
-message CreateCardResponse {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    uint64 board_id = 3;
+message Attachment {
+    uint64 attachmentID  = 1;
+    uint64 cardID  = 2;
+    string file_name = 3;
+    string file_path = 4;
+    string type = 5;
+    string thumbnail = 6;
+}
+
+message User {
+    uint64 userID  = 1;
+    string user_name = 2;
+    string role = 3;
+}
+
+message Comment {
+    uint64 commentID  = 1;
+    uint64 cardID  = 2;
+    User user = 3;
+    string content = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateCardRequest {
+    uint64 cardID  = 1;
+    uint64 listID  = 3;
     string name = 4;
 }
 
+message CreateCardResponse {
+    uint64 cardID  = 1;
+    uint64 listID  = 2;
+    string name = 4;
+}
+
+message GetCardByIDRequest {
+    uint64 cardID  = 1;
+}
+
+message GetCardByIDResponse {
+    Card card = 1;
+}
+
+message GetCardsByBoardRequest {
+    uint64 boardID  = 1;
+}
+
+message GetCardsByBoardResponse {
+    repeated CardMeta cards = 1;
+}
+
 message GetCardsByListRequest {
-    uint64 list_id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
-    uint64 id = 4;
+    uint64 listID  = 1;
 }
 
 message GetCardsByListResponse {
     repeated CardMeta cards = 2;
 }
 
-message UpdateCardRequest {
-    uint64 id = 1;
-    string name = 3;
-    string description = 4;
-    google.protobuf.Timestamp start_date = 5;
-    google.protobuf.Timestamp due_date = 6;
-    uint64 attachment_id = 7;
-    uint64 list_id = 8;
-    uint64 board_id = 9;
-    uint64 user_id = 10;
+message UpdateCardNameRequest {
+    uint64 cardID  = 1;
+    string name = 2;
 }
 
-message UpdateCardResponse {
-    uint64 id = 1;
-    string name = 3;
-    string description = 4;
-    google.protobuf.Timestamp start_date = 5;
-    google.protobuf.Timestamp due_date = 6;
-    uint64 attachment_id = 7;
-    uint64 list_id = 8;
-    uint64 board_id = 9;
-    uint64 user_id = 10;
+message UpdateCardNameResponse {
+    bool message = 1;
+}
+
+
+message UpdateCardDescriptionRequest {
+    uint64 cardID  = 1;
+    string description = 2;
+}
+
+message UpdateCardDescriptionResponse {
+    bool message = 1;
+}
+
+message MoveCardPositionRequest {
+    uint64 cardID  = 1;
+    int64 new_position = 2;
+    uint64 old_listID  = 3;
+    uint64 new_listID  = 4;
+}
+
+message MoveCardPositionResponse {
+    string message = 1;
 }
 
 message DeleteCardRequest {
-    uint64 id = 1;
-    uint64 list_id = 2;
-    uint64 board_id = 3;
-    uint64 user_id = 4;
+    uint64 cardID  = 1;
+    uint64 listID  = 2;
 }
 
 message DeleteCardResponse {
     bool message = 1;
 }
 
-message MoveCardPositionRequest {
-    uint64 id = 1;
-    int32 new_position = 2;
-    uint64 list_id = 3;
-    uint64 board_id = 4;
-    uint64 user_id = 5;
+message AddCardLabelRequest {
+    uint64 cardID  = 1;
+    uint64 labelID  = 2;
 }
 
-message MoveCardPositionResponse {
-    bool message = 1;
-}
-
-message WatchCardActivityRequest {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
-}
-
-message WatchCardActivityResponse {
+message AddCardLabelResponse {
     string message = 1;
 }
 
+message RemoveCardLabelRequest {
+    uint64 cardID  = 1;
+    uint64 labelID  = 2;
+}
+
+message RemoveCardLabelResponse {
+    string message = 1;
+}
+
+message SetCardDatesRequest {
+    google.protobuf.Timestamp StartDate = 1;
+    google.protobuf.Timestamp DueDate = 2;
+    uint64 cardID  = 3;
+}
+
+message SetCardDatesResponse {
+    string message = 1;
+}
+
+message MarkCardCompleteRequest {
+    uint64 cardID  = 1;
+}
+
+message MarkCardCompleteResponse {
+    string message = 1;
+}
+
+message AddCardAttachmentRequest {
+    uint64 attachmentID  = 1;
+    uint64 cardID  = 2;
+}
+
+message AddCardAttachmentResponse {
+    string message = 1;
+}
+
+message RemoveCardAttachmentRequest {
+    uint64 attachmentID  = 1;
+    uint64 cardID  = 2;
+}
+
+message RemoveCardAttachmentResponse {
+    string message = 1;
+}
+
+message AddCardCommentRequest {
+    string content = 1;
+    uint64 cardID  = 2;
+}
+
+message AddCardCommentResponse {
+    string message = 1;
+}
+
+message RemoveCardCommentRequest {
+    uint64 commentID  = 1;
+    uint64 cardID  = 2;
+}
+
+message RemoveCardCommentResponse {
+    string message = 1;
+}
+
+message AddCardMembersRequest {
+    repeated uint64 userIDs = 1;
+    uint64 cardID  = 2;
+}
+
+message AddCardMembersResponse {
+    string message = 1;
+}
+
+message RemoveCardMembersRequest {
+    repeated uint64 userIDs = 1;
+    uint64 cardID  = 2;
+}
+
+message RemoveCardMembersResponse {
+    string message = 1;
+}
+
+message ArchiveCardRequest {
+    uint64 cardID  = 1;
+}
+
+message ArchiveCardResponse {
+    string message = 1;
+}
+
+message RestoreCardRequest {
+    uint64 cardID  = 1;
+}
+
+message RestoreCardResponse {
+    string message = 1;
+}
+
+// message WatchCardActivityRequest {
+//     uint64 cardID  = 1;
+// }
+
+// message WatchCardActivityResponse {
+//     string message = 1;
+// }
+
 service CardService {
     rpc CreateCard(CreateCardRequest) returns (CreateCardResponse) {}
+    rpc GetCardByID(GetCardByIDRequest) returns (GetCardByIDResponse) {}
     rpc GetCardsByList(GetCardsByListRequest) returns (GetCardsByListResponse) {}
-    rpc UpdateCard(UpdateCardRequest) returns (UpdateCardResponse) {}
-    rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse) {}
+    rpc GetCardsByBoard(GetCardsByBoardRequest) returns (GetCardsByBoardResponse) {}
     rpc MoveCardPosition(MoveCardPositionRequest) returns (MoveCardPositionResponse) {}
-    rpc WatchCardActivity(WatchCardActivityRequest) returns (stream WatchCardActivityResponse) {}
+    rpc UpdateCardName(UpdateCardNameRequest) returns (UpdateCardNameResponse) {}
+    rpc UpdateCardDescription(UpdateCardDescriptionRequest) returns (UpdateCardDescriptionResponse) {}
+    rpc AddCardLabel(AddCardLabelRequest) returns (AddCardLabelResponse) {}
+    rpc RemoveCardLabel(RemoveCardLabelRequest) returns (RemoveCardLabelResponse) {}
+    rpc SetCardDates(SetCardDatesRequest) returns (SetCardDatesResponse) {}
+    rpc MarkCardComplete(MarkCardCompleteRequest) returns (MarkCardCompleteResponse) {}
+    rpc AddCardAttachment(AddCardAttachmentRequest) returns (AddCardAttachmentResponse) {}
+    rpc RemoveCardAttachment(RemoveCardAttachmentRequest) returns (RemoveCardAttachmentResponse) {}
+    rpc AddCardComment(AddCardCommentRequest) returns (AddCardCommentResponse) {}
+    rpc RemoveCardComment(RemoveCardCommentRequest) returns (RemoveCardCommentResponse) {}
+    rpc AddCardMembers(AddCardMembersRequest) returns (AddCardMembersResponse) {}
+    rpc RemoveCardMembers(RemoveCardMembersRequest) returns (RemoveCardMembersResponse) {}
+    rpc ArchiveCard(ArchiveCardRequest) returns (ArchiveCardResponse) {}
+    rpc RestoreCard(RestoreCardRequest) returns (RestoreCardResponse) {}
+    rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse) {}
 }

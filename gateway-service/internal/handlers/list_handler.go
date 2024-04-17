@@ -40,7 +40,7 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	var input CreateListInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -75,7 +75,7 @@ func (h *ListHandler) GetListsByBoard(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	boardIDStr := c.Param("id")
 	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
@@ -107,7 +107,7 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	listIDStr := c.Param("id")
 	listID, err := strconv.ParseUint(listIDStr, 10, 64)
@@ -150,7 +150,7 @@ func (h *ListHandler) DeleteList(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	listIDStr := c.Param("id")
 	listID, err := strconv.ParseUint(listIDStr, 10, 64)
@@ -186,7 +186,7 @@ func (h *ListHandler) MoveListPosition(c *gin.Context) {
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	userId := user.(*pb_user.User).UserID
 
 	listIDStr := c.Param("id")
 	listID, err := strconv.ParseUint(listIDStr, 10, 64)

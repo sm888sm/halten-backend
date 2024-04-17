@@ -9,6 +9,7 @@ import (
 
 	models "github.com/sm888sm/halten-backend/models"
 
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 
 	"google.golang.org/grpc/codes"
@@ -31,13 +32,13 @@ func (r *GormUserRepository) CreateUser(user *models.User) error {
 		var count int64
 		tx.Model(user).Where("username = ?", user.Username).Count(&count)
 		if count > 0 {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(errorhandler.ErrConflict, "username already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "username already in use").Error())
 		}
 
 		// Check if email is already in use
 		tx.Model(user).Where("email = ? OR new_email = ?", user.Email, user.Email).Count(&count)
 		if count > 0 {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(errorhandler.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
 		}
 
 		// Create user
@@ -54,7 +55,7 @@ func (r *GormUserRepository) GetUserByID(id int) (*models.User, error) {
 	result := r.db.First(&user, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(errorhandler.ErrNotFound, "User not found").Error())
+			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 		}
 		return nil, errorhandler.NewGrpcInternalError()
 	}
@@ -66,7 +67,7 @@ func (r *GormUserRepository) GetUserByUsername(username string) (*models.User, e
 	result := r.db.Where("username = ?", username).First(&user)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(errorhandler.ErrNotFound, "User not found").Error())
+			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 		}
 		return nil, errorhandler.NewGrpcInternalError()
 	}
@@ -79,7 +80,7 @@ func (r *GormUserRepository) UpdatePassword(userID uint, newPassword string) err
 		result := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", userID).First(&user)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(errorhandler.ErrNotFound, "User not found").Error())
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -96,7 +97,7 @@ func (r *GormUserRepository) UpdateEmail(userID uint, newEmail string) error {
 		result := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", userID).First(&user)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(errorhandler.ErrNotFound, "User not found").Error())
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -105,7 +106,7 @@ func (r *GormUserRepository) UpdateEmail(userID uint, newEmail string) error {
 		var count int64
 		tx.Model(&models.User{}).Where("email = ? OR new_email = ?", newEmail, newEmail).Count(&count)
 		if count > 0 {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(errorhandler.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
 		}
 
 		// Generate a token for email verification
@@ -138,7 +139,7 @@ func (r *GormUserRepository) UpdateUsername(oldUsername, newUsername string) err
 
 		// Check if the new username is already taken
 		if _, err := r.GetUserByUsername(newUsername); err == nil {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(errorhandler.ErrNotFound, "username already taken").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrNotFound, "username already taken").Error())
 		}
 
 		// Update username
@@ -153,17 +154,17 @@ func (r *GormUserRepository) ConfirmNewEmail(username string, token string) erro
 		var user models.User
 		result := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("username = ?", username).First(&user)
 		if result.Error != nil {
-			return errorhandler.NewAPIError(errorhandler.ErrInternalServerError, "Internal server error")
+			return errorhandler.NewAPIError(httpcodes.ErrInternalServerError, "Internal server error")
 		}
 
 		// Check if the token is valid
 		if user.Token != token {
-			return status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(errorhandler.ErrUnauthorized, "Invalid token").Error())
+			return status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(httpcodes.ErrUnauthorized, "Invalid token").Error())
 		}
 
 		// Check if the token is expired
 		if time.Since(user.TokenCreatedAt) > 48*time.Hour {
-			return status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(errorhandler.ErrUnauthorized, "Token expired").Error())
+			return status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(httpcodes.ErrUnauthorized, "Token expired").Error())
 		}
 
 		// Update email

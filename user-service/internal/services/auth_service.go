@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb" // Assuming your gRPC definitions are here
 	"github.com/sm888sm/halten-backend/user-service/internal/repositories"
@@ -32,7 +33,7 @@ func (s *AuthService) Login(ctx context.Context, in *pb_auth.LoginRequest) (*pb_
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(in.Password)); err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(errorhandler.ErrUnauthorized, "Invalid credentials").Error())
+		return nil, status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(httpcodes.ErrUnauthorized, "Invalid credentials").Error())
 	}
 
 	accessToken, err := s.generateToken(user.ID, 15*time.Minute)
@@ -77,7 +78,7 @@ func (s *AuthService) generateToken(userID uint, duration time.Duration) (string
 }
 
 func (s *AuthService) validateToken(tokenString string) (*jwt.MapClaims, error) {
-	invalidTokenError := status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(errorhandler.ErrBadRequest, "Invalid token").Error())
+	invalidTokenError := status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid token").Error())
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

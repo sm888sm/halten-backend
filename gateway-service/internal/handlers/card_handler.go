@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -9,22 +10,18 @@ import (
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/responsehandler"
 	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
-	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
+	"google.golang.org/grpc/metadata"
 )
 
 type CreateCardInput struct {
-	ListId uint64 `json:"listId"`
 	Name   string `json:"name"`
-}
-
-type UpdateCardInput struct {
-	Name   string `json:"name"`
-	ListId uint64 `json:"listId"`
+	ListID uint64 `json:"listID"`
 }
 
 type MoveCardPositionInput struct {
-	NewPosition int32  `json:"newPosition"`
-	ListId      uint64 `json:"listId"`
+	NewPosition int64  `json:"newPosition"`
+	OldListID   uint64 `json:"oldlistID"`
+	NewListID   uint64 `json:"newListID"`
 }
 
 type CardHandler struct {
@@ -36,17 +33,57 @@ func NewCardHandler(services *external_services.Services) *CardHandler {
 }
 
 func (h *CardHandler) CreateCard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	userId := user.(*pb_user.User).Id
 
 	var input CreateCardInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
+		return
+	}
+
+	// TODO : Get board id by list id
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	cardService, err := h.services.GetCardClient()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		return
+	}
+
+	req := &pb_card.CreateCardRequest{
+		ListID: input.ListID,
+		Name:   input.Name,
+	}
+	_, err = cardService.CreateCard(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Card created successfully", nil)
+}
+
+func (h *CardHandler) GetCardByID(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	}
+
+	// TODO get board id by card id
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	cardIDStr := c.Param("card-id")
+	cardID, err := strconv.ParseUint(cardIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid card ID"))
 		return
 	}
 
@@ -56,30 +93,62 @@ func (h *CardHandler) CreateCard(c *gin.Context) {
 		return
 	}
 
-	req := &pb_card.CreateCardRequest{
-		UserId: userId,
-		ListId: input.ListId,
-		Name:   input.Name,
-	}
-	_, err = cardService.CreateCard(c, req)
+	req := &pb_card.GetCardByIDRequest{CardID: cardID}
+	resp, err := cardService.GetCardByID(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Card created successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "Card fetched successfully", resp)
 }
 
-func (h *CardHandler) GetCardsByList(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
+func (h *CardHandler) GetCardsByBoard(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	}
+
+	// TODO : get board id by card id
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	boardIDStr := c.Param("board-id")
+	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid list ID"))
+		return
+	}
+
+	cardService, err := h.services.GetCardClient()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	req := &pb_card.GetCardsByBoardRequest{BoardID: boardID}
+	resp, err := cardService.GetCardsByBoard(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		return
+	}
 
-	listIDStr := c.Param("id")
+	responsehandler.Success(c, http.StatusOK, "Cards fetched successfully", resp)
+}
+
+func (h *CardHandler) GetCardsByList(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	}
+
+	// TODO get board id by list id
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	listIDStr := c.Param("list-id")
 	listID, err := strconv.ParseUint(listIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid list ID"))
@@ -92,8 +161,8 @@ func (h *CardHandler) GetCardsByList(c *gin.Context) {
 		return
 	}
 
-	req := &pb_card.GetCardsByListRequest{ListId: listID, UserId: uint64(userId)}
-	resp, err := cardService.GetCardsByList(c, req)
+	req := &pb_card.GetCardsByListRequest{ListID: listID}
+	resp, err := cardService.GetCardsByList(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
@@ -102,96 +171,18 @@ func (h *CardHandler) GetCardsByList(c *gin.Context) {
 	responsehandler.Success(c, http.StatusOK, "Cards fetched successfully", resp)
 }
 
-func (h *CardHandler) UpdateCard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	userId := user.(*pb_user.User).Id
-
-	cardIDStr := c.Param("id")
-	cardID, err := strconv.ParseUint(cardIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid card ID"))
-		return
-	}
-
-	var input UpdateCardInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
-		return
-	}
-
-	cardService, err := h.services.GetCardClient()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	req := &pb_card.UpdateCardRequest{
-		Id:     cardID,
-		UserId: userId,
-		Name:   input.Name,
-		ListId: input.ListId,
-	}
-
-	_, err = cardService.UpdateCard(c, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	responsehandler.Success(c, http.StatusOK, "Card updated successfully", nil)
-}
-
-func (h *CardHandler) DeleteCard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	userId := user.(*pb_user.User).Id
-
-	cardIDStr := c.Param("id")
-	cardID, err := strconv.ParseUint(cardIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid card ID"))
-		return
-	}
-
-	cardService, err := h.services.GetCardClient()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	req := &pb_card.DeleteCardRequest{
-		Id:     cardID,
-		UserId: userId,
-	}
-
-	_, err = cardService.DeleteCard(c, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	responsehandler.Success(c, http.StatusOK, "Card deleted successfully", nil)
-}
-
 func (h *CardHandler) MoveCardPosition(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
+	userID, err := getUserID(c)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
 	}
 
-	userId := user.(*pb_user.User).Id
+	// TODO get board id by list id for old and new list
 
-	cardIDStr := c.Param("id")
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	cardIDStr := c.Param("card-id")
 	cardID, err := strconv.ParseUint(cardIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid card ID"))
@@ -211,17 +202,54 @@ func (h *CardHandler) MoveCardPosition(c *gin.Context) {
 	}
 
 	req := &pb_card.MoveCardPositionRequest{
-		Id:          cardID,
-		UserId:      userId,
+		CardID:      cardID,
 		NewPosition: input.NewPosition,
-		ListId:      input.ListId,
+		OldListID:   input.OldListID,
+		NewListID:   input.NewListID,
 	}
 
-	_, err = cardService.MoveCardPosition(c, req)
+	_, err = cardService.MoveCardPosition(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
 		return
 	}
 
 	responsehandler.Success(c, http.StatusOK, "Card position moved successfully", nil)
+}
+
+func (h *CardHandler) DeleteCard(c *gin.Context) {
+	userID, err := getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+	}
+
+	// TODO get board by card id
+
+	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	cardIDStr := c.Param("card-id")
+	cardID, err := strconv.ParseUint(cardIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid card ID"))
+		return
+	}
+
+	cardService, err := h.services.GetCardClient()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		return
+	}
+
+	req := &pb_card.DeleteCardRequest{
+		CardID: cardID,
+	}
+
+	_, err = cardService.DeleteCard(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Card deleted successfully", nil)
 }
