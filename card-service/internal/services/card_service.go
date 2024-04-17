@@ -31,6 +31,7 @@ func (s *CardService) CreateCard(ctx context.Context, req *pb.CreateCardRequest)
 		BoardID: uint(boardID),
 		ListID:  uint(req.ListID),
 	}
+
 	err := s.cardRepo.CreateCard(repositories.CreateCardParams{Card: card})
 	if err != nil {
 		return nil, err
