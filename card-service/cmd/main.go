@@ -8,8 +8,9 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	pb "github.com/sm888sm/halten-backend/card-service/api/pb"
-	middlewares "github.com/sm888sm/halten-backend/card-service/internal/middlewares"
+	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
+	external_services "github.com/sm888sm/halten-backend/card-service/external/services"
+	"github.com/sm888sm/halten-backend/card-service/internal/middlewares"
 	"github.com/sm888sm/halten-backend/card-service/internal/services"
 
 	"github.com/sm888sm/halten-backend/card-service/internal/config"
@@ -54,15 +55,26 @@ func main() {
 	// Initialize repositories
 	cardRepo := repositories.NewCardRepository(db.SQLConn)
 
+	// Initialize external services
+	svc := external_services.GetServices(&cfg.Services)
+	defer svc.Close()
+
 	// Initialize services
 	cardService := services.NewCardService(cardRepo)
 
-	validator := middlewares.NewValidator(db.SQLConn)
 	// Create gRPC server with validation interceptor
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(validator.ValidationInterceptor))
+	AuthInterceptor := middlewares.NewAuthInterceptor(db.SQLConn, svc)
+	validatorInterceptor := middlewares.NewValidatorInterceptor(db.SQLConn)
+
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			AuthInterceptor.AuthInterceptor,
+			validatorInterceptor.ValidationInterceptor,
+		),
+	)
 
 	// Register services
-	pb.RegisterCardServiceServer(grpcServer, cardService)
+	pb_card.RegisterCardServiceServer(grpcServer, cardService)
 
 	// Start listening
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))

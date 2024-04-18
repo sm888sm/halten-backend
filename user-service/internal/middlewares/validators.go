@@ -90,7 +90,7 @@ func validateGetUserByIDRequest(req *pb.GetUserByIDRequest) error {
 	if req.UserID == 0 {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
-			Field:   "id",
+			Field:   "userID",
 			Message: "ID cannot be empty",
 		},
 		)
@@ -113,7 +113,7 @@ func validateGetUserByUsernameRequest(req *pb.GetUserByUsernameRequest) error {
 }
 
 func validateUpdateUsernameRequest(req *pb.UpdateUsernameRequest) error {
-	if req.NewUsername == "" {
+	if req.Username == "" {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
 			Field:   "newUsername",
@@ -151,12 +151,14 @@ func validateUpdatePasswordRequest(req *pb.UpdatePasswordRequest) error {
 }
 
 func validateConfirmNewEmailRequest(req *pb.ConfirmNewEmailRequest) error {
-	if req.Username == "" {
+	if req.UserID == 0 {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", errorhandler.FieldError{
 
-			Field:   "username",
-			Message: "username cannot be empty",
-		})
+			Field:   "userID",
+			Message: "ID cannot be empty",
+		},
+		)
+
 	}
 
 	return nil

@@ -2,147 +2,23 @@ package middlewares
 
 import (
 	"context"
-	"errors"
 
 	pb "github.com/sm888sm/halten-backend/card-service/api/pb"
-	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
 	"github.com/sm888sm/halten-backend/common/constants/fielderrors"
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
-	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
-	"github.com/sm888sm/halten-backend/common/helpers"
-	"github.com/sm888sm/halten-backend/models"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
 
-var (
-	checkVisibility = map[string]bool{
-		"/proto.CardService/GetCardByID":     true,
-		"/proto.CardService/GetCardsByList":  true,
-		"/proto.CardService/GetCardsByBoard": true,
-	}
-
-	checkRoles = map[string]string{
-		"/proto.CardService/CreateCard":            roles.MemberRole,
-		"/proto.CardService/MoveCardPosition":      roles.MemberRole,
-		"/proto.CardService/UpdateCardName":        roles.MemberRole,
-		"/proto.CardService/UpdateCardDescription": roles.MemberRole,
-		"/proto.CardService/AddCardLabel":          roles.MemberRole,
-		"/proto.CardService/RemoveCardLabel":       roles.MemberRole,
-		"/proto.CardService/SetCardDates":          roles.MemberRole,
-		"/proto.CardService/MarkCardComplete":      roles.MemberRole,
-		"/proto.CardService/AddCardAttachment":     roles.MemberRole,
-		"/proto.CardService/RemoveCardAttachment":  roles.MemberRole,
-		"/proto.CardService/AddCardComment":        roles.MemberRole,
-		"/proto.CardService/RemoveCardComment":     roles.MemberRole,
-		"/proto.CardService/AddCardMembers":        roles.MemberRole,
-		"/proto.CardService/RemoveCardMembers":     roles.MemberRole,
-		"/proto.CardService/ArchiveCard":           roles.MemberRole,
-		"/proto.CardService/RestoreCard":           roles.MemberRole,
-		"/proto.CardService/DeleteCard":            roles.AdminRole,
-		// Add other methods here...
-	}
-
-	roleHierarchy = map[string]int{
-		roles.ObserverRole: 1,
-		roles.MemberRole:   2,
-		roles.AdminRole:    3,
-		roles.OwnerRole:    4,
-	}
-)
-
-type Validator struct {
+type ValidatorInterceptor struct {
 	db *gorm.DB
 }
 
-func NewValidator(db *gorm.DB) *Validator {
-	return &Validator{db: db}
+func NewValidatorInterceptor(db *gorm.DB) *ValidatorInterceptor {
+	return &ValidatorInterceptor{db: db}
 }
 
-func (v *Validator) checkBoardUserRole(userID uint64, boardID uint64, requiredRole string) error {
-	var permission models.Permission
-	if err := v.db.Select("role").Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
-		}
-		return errorhandler.NewGrpcInternalError()
-	}
-
-	// Check if the user's role is sufficient
-	if roleHierarchy[permission.Role] < roleHierarchy[requiredRole] {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Insufficient permissions")
-	}
-
-	return nil
-}
-
-func (v *Validator) checkBoardVisibility(userID, boardID uint64) error {
-	var result struct {
-		Visibility string
-		UserID     uint64
-	}
-
-	query := `SELECT boards.visibility, permissions.user_id 
-              FROM boards 
-              LEFT JOIN permissions ON boards.id = permissions.board_id AND permissions.user_id = ?
-              WHERE boards.id = ?`
-
-	if err := v.db.Raw(query, userID, boardID).Scan(&result).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
-		}
-		return errorhandler.NewGrpcInternalError()
-	}
-
-	if result.Visibility == "private" && result.UserID != userID {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
-	}
-
-	return nil
-}
-
-func (v *Validator) ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-
-	// Define the methods that don't require user role check
-
-	userID, err := helpers.ExtractUserIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	boardID, err := helpers.ExtractBoardIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx = context.WithValue(ctx, contextkeys.UserIDKey{}, userID)
-	ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
-
-	// Check if the method requires user role check
-
-	if !checkVisibility[info.FullMethod] {
-		// Define the required role for each method
-
-		requiredRole, ok := checkRoles[info.FullMethod]
-		if !ok {
-			return nil, errorhandler.NewAPIError(httpcodes.ErrForbidden, "Invalid method")
-		}
-
-		// Check the user's role
-		if err := v.checkBoardUserRole(userID, boardID, requiredRole); err != nil {
-			return nil, err
-		}
-	}
-
-	if checkVisibility[info.FullMethod] {
-		// Check the board's visibility
-		err := v.checkBoardVisibility(userID, boardID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	switch info.FullMethod {
 	// Card Service
 	case "/proto.CardService/CreateCard":

@@ -4,13 +4,70 @@ import (
 	"github.com/sm888sm/halten-backend/models"
 )
 
+type CreateUserRequest struct {
+	User *models.User
+}
+
+type CreateUserResponse struct {
+	User *models.User
+}
+
+type GetUserByIDRequest struct {
+	UserID uint64
+}
+
+type GetUserByIDResponse struct {
+	User *models.User
+}
+
+type GetUserByUsernameRequest struct {
+	Username string
+}
+
+type GetUserByUsernameResponse struct {
+	User *models.User
+}
+
+type UpdatePasswordRequest struct {
+	UserID      uint64
+	NewPassword string
+}
+
+type UpdateEmailRequest struct {
+	UserID   uint64
+	NewEmail string
+}
+
+type UpdateUsernameRequest struct {
+	UserID   uint64
+	Username string
+}
+
+type ConfirmNewEmailRequest struct {
+	UserID uint64
+	Token  string
+}
+
+type CheckBoardUserRoleRequest struct {
+	UserID       uint64
+	BoardID      uint64
+	RequiredRole string
+}
+
+type CheckBoardVisibilityRequest struct {
+	UserID  uint64
+	BoardID uint64
+}
+
 type UserRepository interface {
-	CreateUser(user *models.User) error
-	GetUserByID(id int) (*models.User, error)
-	GetUserByUsername(username string) (*models.User, error)
-	UpdatePassword(userID uint, newPassword string) error
-	UpdateEmail(userID uint, newEmail string) error
-	UpdateUsername(oldUsername, newUsername string) error
-	ConfirmNewEmail(username string, token string) error
+	CreateUser(req *CreateUserRequest) (*CreateUserResponse, error)
+	GetUserByID(req *GetUserByIDRequest) (*GetUserByIDResponse, error)
+	GetUserByUsername(req *GetUserByUsernameRequest) (*GetUserByUsernameResponse, error)
+	UpdatePassword(req *UpdatePasswordRequest) error
+	UpdateEmail(req *UpdateEmailRequest) error
+	UpdateUsername(req *UpdateUsernameRequest) error
+	ConfirmNewEmail(req *ConfirmNewEmailRequest) error
+	CheckBoardUserRole(req *CheckBoardUserRoleRequest) error
+	CheckBoardVisibility(req *CheckBoardVisibilityRequest) error
 	// ... Other data access methods ...
 }

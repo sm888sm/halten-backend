@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	pb "github.com/sm888sm/halten-backend/card-service/api/pb"
+	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
 	"github.com/sm888sm/halten-backend/card-service/internal/repositories"
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
@@ -13,14 +13,14 @@ import (
 
 type CardService struct {
 	cardRepo repositories.CardRepository
-	pb.UnimplementedCardServiceServer
+	pb_card.UnimplementedCardServiceServer
 }
 
 func NewCardService(repo repositories.CardRepository) *CardService {
 	return &CardService{cardRepo: repo}
 }
 
-func (s *CardService) CreateCard(ctx context.Context, req *pb.CreateCardRequest) (*pb.CreateCardResponse, error) {
+func (s *CardService) CreateCard(ctx context.Context, req *pb_card.CreateCardRequest) (*pb_card.CreateCardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -32,24 +32,26 @@ func (s *CardService) CreateCard(ctx context.Context, req *pb.CreateCardRequest)
 		ListID:  uint(req.ListID),
 	}
 
-	err := s.cardRepo.CreateCard(repositories.CreateCardParams{Card: card})
+	repoRes, err := s.cardRepo.CreateCard(&repositories.CreateCardRequest{Card: card})
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateCardResponse{
-		CardID: uint64(card.ID),
+	return &pb_card.CreateCardResponse{
+		CardID: uint64(repoRes.Card.ID),
 		Name:   card.Name,
-		ListID: uint64(card.ListID),
+		ListID: uint64(repoRes.Card.ListID),
 	}, nil
 }
 
-func (s *CardService) GetCardByID(ctx context.Context, req *pb.GetCardByIDRequest) (*pb.GetCardByIDResponse, error) {
-	card, err := s.cardRepo.GetCardByID(repositories.GetCardByIDParams{
+func (s *CardService) GetCardByID(ctx context.Context, req *pb_card.GetCardByIDRequest) (*pb_card.GetCardByIDResponse, error) {
+	repoRes, err := s.cardRepo.GetCardByID(&repositories.GetCardByIDRequest{
 		CardID: req.CardID,
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	card := repoRes.Card
 
 	// Convert slices of Attachment, Label, and User to slices of uint64 for protobuf
 	var attachments, labels, members []uint64
@@ -63,8 +65,8 @@ func (s *CardService) GetCardByID(ctx context.Context, req *pb.GetCardByIDReques
 		members = append(members, uint64(m.ID))
 	}
 
-	return &pb.GetCardByIDResponse{
-		Card: &pb.Card{
+	return &pb_card.GetCardByIDResponse{
+		Card: &pb_card.Card{
 			CardID:      uint64(card.ID),
 			ListID:      uint64(card.ListID),
 			Name:        card.Name,
@@ -80,16 +82,16 @@ func (s *CardService) GetCardByID(ctx context.Context, req *pb.GetCardByIDReques
 	}, nil
 }
 
-func (s *CardService) GetCardsByList(ctx context.Context, req *pb.GetCardsByListRequest) (*pb.GetCardsByListResponse, error) {
-	cards, err := s.cardRepo.GetCardsByList(repositories.GetCardsByListParams{
+func (s *CardService) GetCardsByList(ctx context.Context, req *pb_card.GetCardsByListRequest) (*pb_card.GetCardsByListResponse, error) {
+	repoRes, err := s.cardRepo.GetCardsByList(&repositories.GetCardsByListRequest{
 		ListID: req.ListID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	var pbCards []*pb.CardMeta
-	for _, c := range cards {
+	var pb_cardCards []*pb_card.CardMeta
+	for _, c := range repoRes.Cards {
 		// Convert slice of Label to slice of uint64 for protobuf
 		var labels []uint64
 		for _, l := range c.Labels {
@@ -101,7 +103,7 @@ func (s *CardService) GetCardsByList(ctx context.Context, req *pb.GetCardsByList
 			members = append(members, uint64(l.ID))
 		}
 
-		pbCards = append(pbCards, &pb.CardMeta{
+		pb_cardCards = append(pb_cardCards, &pb_card.CardMeta{
 			CardID:          c.ID,
 			ListID:          c.ListID,
 			BoardID:         c.BoardID,
@@ -118,14 +120,14 @@ func (s *CardService) GetCardsByList(ctx context.Context, req *pb.GetCardsByList
 		})
 	}
 
-	return &pb.GetCardsByListResponse{
-		Cards: pbCards,
+	return &pb_card.GetCardsByListResponse{
+		Cards: pb_cardCards,
 	}, nil
 }
 
-func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb.GetCardsByBoardRequest) (*pb.GetCardsByBoardResponse, error) {
+func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb_card.GetCardsByBoardRequest) (*pb_card.GetCardsByBoardResponse, error) {
 
-	cards, err := s.cardRepo.GetCardsByBoard(repositories.GetCardsByBoardParams{
+	repoRes, err := s.cardRepo.GetCardsByBoard(&repositories.GetCardsByBoardRequest{
 		BoardID: req.BoardID,
 	})
 
@@ -133,8 +135,8 @@ func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb.GetCardsByBoa
 		return nil, err
 	}
 
-	var pbCards []*pb.CardMeta
-	for _, c := range cards {
+	var pb_cardCards []*pb_card.CardMeta
+	for _, c := range repoRes.Cards {
 		// Convert slice of Label to slice of uint64 for protobuf
 		var labels []uint64
 		for _, l := range c.Labels {
@@ -146,7 +148,7 @@ func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb.GetCardsByBoa
 			members = append(members, uint64(l.ID))
 		}
 
-		pbCards = append(pbCards, &pb.CardMeta{
+		pb_cardCards = append(pb_cardCards, &pb_card.CardMeta{
 			CardID:          c.ID,
 			ListID:          c.ListID,
 			BoardID:         c.BoardID,
@@ -161,104 +163,105 @@ func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb.GetCardsByBoa
 		})
 	}
 
-	return &pb.GetCardsByBoardResponse{
-		Cards: pbCards,
+	return &pb_card.GetCardsByBoardResponse{
+		Cards: pb_cardCards,
 	}, nil
 }
 
-func (s *CardService) MoveCardPosition(ctx context.Context, req *pb.MoveCardPositionRequest) (*pb.MoveCardPositionResponse, error) {
+func (s *CardService) MoveCardPosition(ctx context.Context, req *pb_card.MoveCardPositionRequest) (*pb_card.MoveCardPositionResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.MoveCardPositionParams{
+	repoReq := &repositories.MoveCardPositionRequest{
 		CardID:      req.CardID,
 		NewPosition: int(req.NewPosition),
 		BoardID:     boardID,
 		OldListID:   req.OldListID,
 		NewListID:   req.NewListID,
 	}
-	err := s.cardRepo.MoveCardPosition(params)
+
+	err := s.cardRepo.MoveCardPosition(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.MoveCardPositionResponse{}, nil
+	return &pb_card.MoveCardPositionResponse{}, nil
 }
 
-func (s *CardService) UpdateCardName(ctx context.Context, req *pb.UpdateCardNameRequest) (*pb.UpdateCardNameResponse, error) {
+func (s *CardService) UpdateCardName(ctx context.Context, req *pb_card.UpdateCardNameRequest) (*pb_card.UpdateCardNameResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.UpdateCardNameParams{
+	repoReq := &repositories.UpdateCardNameRequest{
 		CardID:  req.CardID,
 		Name:    req.Name,
 		BoardID: boardID,
 	}
-	err := s.cardRepo.UpdateCardName(params)
+	err := s.cardRepo.UpdateCardName(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.UpdateCardNameResponse{}, nil
+	return &pb_card.UpdateCardNameResponse{}, nil
 }
 
-func (s *CardService) UpdateCardDescription(ctx context.Context, req *pb.UpdateCardDescriptionRequest) (*pb.UpdateCardDescriptionResponse, error) {
+func (s *CardService) UpdateCardDescription(ctx context.Context, req *pb_card.UpdateCardDescriptionRequest) (*pb_card.UpdateCardDescriptionResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.UpdateCardDescriptionParams{
+	repoReq := &repositories.UpdateCardDescriptionRequest{
 		CardID:         req.CardID,
 		NewDescription: req.Description,
 		BoardID:        boardID,
 	}
-	err := s.cardRepo.UpdateCardDescription(params)
+	err := s.cardRepo.UpdateCardDescription(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.UpdateCardDescriptionResponse{}, nil
+	return &pb_card.UpdateCardDescriptionResponse{}, nil
 }
 
-func (s *CardService) AddCardLabel(ctx context.Context, req *pb.AddCardLabelRequest) (*pb.AddCardLabelResponse, error) {
+func (s *CardService) AddCardLabel(ctx context.Context, req *pb_card.AddCardLabelRequest) (*pb_card.AddCardLabelResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.AddCardLabelParams{
+	repoReq := &repositories.AddCardLabelRequest{
 		LabelID: req.LabelID,
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
-	err := s.cardRepo.AddCardLabel(params)
+	err := s.cardRepo.AddCardLabel(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddCardLabelResponse{}, nil
+	return &pb_card.AddCardLabelResponse{}, nil
 }
 
-func (s *CardService) RemoveCardLabel(ctx context.Context, req *pb.RemoveCardLabelRequest) (*pb.RemoveCardLabelResponse, error) {
+func (s *CardService) RemoveCardLabel(ctx context.Context, req *pb_card.RemoveCardLabelRequest) (*pb_card.RemoveCardLabelResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.RemoveCardLabelParams{
+	repoReq := &repositories.RemoveCardLabelRequest{
 		LabelID: req.LabelID,
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
-	err := s.cardRepo.RemoveCardLabel(params)
+	err := s.cardRepo.RemoveCardLabel(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.RemoveCardLabelResponse{}, nil
+	return &pb_card.RemoveCardLabelResponse{}, nil
 }
 
-func (s *CardService) SetCardDates(ctx context.Context, req *pb.SetCardDatesRequest) (*pb.SetCardDatesResponse, error) {
+func (s *CardService) SetCardDates(ctx context.Context, req *pb_card.SetCardDatesRequest) (*pb_card.SetCardDatesResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -267,76 +270,76 @@ func (s *CardService) SetCardDates(ctx context.Context, req *pb.SetCardDatesRequ
 	startDate := req.StartDate.AsTime()
 	dueDate := req.DueDate.AsTime()
 
-	params := repositories.SetCardDatesParams{
+	repoReq := &repositories.SetCardDatesRequest{
 		StartDate: &startDate,
 		DueDate:   &dueDate,
 		CardID:    req.CardID,
 		BoardID:   boardID,
 	}
-	err := s.cardRepo.SetCardDates(params)
+	err := s.cardRepo.SetCardDates(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.SetCardDatesResponse{}, nil
+	return &pb_card.SetCardDatesResponse{}, nil
 }
 
-func (s *CardService) MarkCardComplete(ctx context.Context, req *pb.MarkCardCompleteRequest) (*pb.MarkCardCompleteResponse, error) {
+func (s *CardService) MarkCardComplete(ctx context.Context, req *pb_card.MarkCardCompleteRequest) (*pb_card.MarkCardCompleteResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.MarkCardCompleteParams{
+	repoReq := &repositories.MarkCardCompleteRequest{
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
 
-	err := s.cardRepo.MarkCardComplete(params)
+	err := s.cardRepo.MarkCardComplete(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.MarkCardCompleteResponse{}, nil
+	return &pb_card.MarkCardCompleteResponse{}, nil
 }
 
-func (s *CardService) AddCardAttachment(ctx context.Context, req *pb.AddCardAttachmentRequest) (*pb.AddCardAttachmentResponse, error) {
+func (s *CardService) AddCardAttachment(ctx context.Context, req *pb_card.AddCardAttachmentRequest) (*pb_card.AddCardAttachmentResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.AddCardAttachmentParams{
+	repoReq := &repositories.AddCardAttachmentRequest{
 		AttachmentID: req.AttachmentID,
 		CardID:       req.CardID,
 		BoardID:      boardID,
 	}
 
-	err := s.cardRepo.AddCardAttachment(params)
+	err := s.cardRepo.AddCardAttachment(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddCardAttachmentResponse{}, nil
+	return &pb_card.AddCardAttachmentResponse{}, nil
 }
 
-func (s *CardService) RemoveCardAttachment(ctx context.Context, req *pb.RemoveCardAttachmentRequest) (*pb.RemoveCardAttachmentResponse, error) {
+func (s *CardService) RemoveCardAttachment(ctx context.Context, req *pb_card.RemoveCardAttachmentRequest) (*pb_card.RemoveCardAttachmentResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.RemoveCardAttachmentParams{
+	repoReq := &repositories.RemoveCardAttachmentRequest{
 		AttachmentID: req.AttachmentID,
 		CardID:       req.CardID,
 		BoardID:      boardID,
 	}
 
-	err := s.cardRepo.RemoveCardAttachment(params)
+	err := s.cardRepo.RemoveCardAttachment(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.RemoveCardAttachmentResponse{}, nil
+	return &pb_card.RemoveCardAttachmentResponse{}, nil
 }
 
-func (s *CardService) AddCardComment(ctx context.Context, req *pb.AddCardCommentRequest) (*pb.AddCardCommentResponse, error) {
+func (s *CardService) AddCardComment(ctx context.Context, req *pb_card.AddCardCommentRequest) (*pb_card.AddCardCommentResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
 		// Handle error: userID was not a uint64
@@ -352,21 +355,21 @@ func (s *CardService) AddCardComment(ctx context.Context, req *pb.AddCardComment
 		Content: req.Content,
 	}
 
-	params := repositories.AddCardCommentParams{
+	repoReq := &repositories.AddCardCommentRequest{
 		Comment: comment,
 		CardID:  req.CardID,
 		BoardID: boardID,
 		UserID:  userID,
 	}
 
-	err := s.cardRepo.AddCardComment(params)
+	err := s.cardRepo.AddCardComment(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddCardCommentResponse{}, nil
+	return &pb_card.AddCardCommentResponse{}, nil
 }
 
-func (s *CardService) RemoveCardComment(ctx context.Context, req *pb.RemoveCardCommentRequest) (*pb.RemoveCardCommentResponse, error) {
+func (s *CardService) RemoveCardComment(ctx context.Context, req *pb_card.RemoveCardCommentRequest) (*pb_card.RemoveCardCommentResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -377,21 +380,21 @@ func (s *CardService) RemoveCardComment(ctx context.Context, req *pb.RemoveCardC
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.RemoveCardCommentParams{
+	repoReq := &repositories.RemoveCardCommentRequest{
 		CommentID: req.CommentID,
 		CardID:    req.CardID,
 		BoardID:   boardID,
 		UserID:    userID,
 	}
 
-	err := s.cardRepo.RemoveCardComment(params)
+	err := s.cardRepo.RemoveCardComment(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.RemoveCardCommentResponse{}, nil
+	return &pb_card.RemoveCardCommentResponse{}, nil
 }
 
-func (s *CardService) AddCardMembers(ctx context.Context, req *pb.AddCardMembersRequest) (*pb.AddCardMembersResponse, error) {
+func (s *CardService) AddCardMembers(ctx context.Context, req *pb_card.AddCardMembersRequest) (*pb_card.AddCardMembersResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -399,86 +402,88 @@ func (s *CardService) AddCardMembers(ctx context.Context, req *pb.AddCardMembers
 
 	userIDs := append([]uint64(nil), req.UserIDs...)
 
-	params := repositories.AddCardMembersParams{
+	repoReq := &repositories.AddCardMembersRequest{
 		UserIDs: userIDs,
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
-	err := s.cardRepo.AddCardMembers(params)
+	err := s.cardRepo.AddCardMembers(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AddCardMembersResponse{}, nil
+	return &pb_card.AddCardMembersResponse{}, nil
 }
 
-func (s *CardService) RemoveCardMembers(ctx context.Context, req *pb.RemoveCardMembersRequest) (*pb.RemoveCardMembersResponse, error) {
+func (s *CardService) RemoveCardMembers(ctx context.Context, req *pb_card.RemoveCardMembersRequest) (*pb_card.RemoveCardMembersResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.RemoveCardMembersParams{
+	repoReq := &repositories.RemoveCardMembersRequest{
 		UserIDs: req.UserIDs,
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
 
-	err := s.cardRepo.RemoveCardMembers(params)
+	err := s.cardRepo.RemoveCardMembers(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.RemoveCardMembersResponse{}, nil
+	return &pb_card.RemoveCardMembersResponse{}, nil
 }
 
-func (s *CardService) ArchiveCard(ctx context.Context, req *pb.ArchiveCardRequest) (*pb.ArchiveCardResponse, error) {
+func (s *CardService) ArchiveCard(ctx context.Context, req *pb_card.ArchiveCardRequest) (*pb_card.ArchiveCardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.ArchiveCardParams{
+	repoReq := &repositories.ArchiveCardRequest{
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
 
-	err := s.cardRepo.ArchiveCard(params)
+	err := s.cardRepo.ArchiveCard(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ArchiveCardResponse{}, nil
+	return &pb_card.ArchiveCardResponse{}, nil
 }
 
-func (s *CardService) RestoreCard(ctx context.Context, req *pb.RestoreCardRequest) (*pb.RestoreCardResponse, error) {
+func (s *CardService) RestoreCard(ctx context.Context, req *pb_card.RestoreCardRequest) (*pb_card.RestoreCardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	params := repositories.RestoreCardParams{
+	repoReq := &repositories.RestoreCardRequest{
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
 
-	err := s.cardRepo.RestoreCard(params)
+	err := s.cardRepo.RestoreCard(repoReq)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.RestoreCardResponse{}, nil
+	return &pb_card.RestoreCardResponse{}, nil
 }
 
-func (s *CardService) DeleteCard(ctx context.Context, req *pb.DeleteCardRequest) (*pb.DeleteCardResponse, error) {
+func (s *CardService) DeleteCard(ctx context.Context, req *pb_card.DeleteCardRequest) (*pb_card.DeleteCardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	err := s.cardRepo.DeleteCard(repositories.DeleteCardParams{
+	repoReq := &repositories.DeleteCardRequest{
 		CardID:  req.CardID,
 		BoardID: boardID,
-	})
+	}
+
+	err := s.cardRepo.DeleteCard(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.DeleteCardResponse{}, nil
+	return &pb_card.DeleteCardResponse{}, nil
 }

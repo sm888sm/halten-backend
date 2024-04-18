@@ -12,8 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 type AuthService struct {
@@ -26,22 +24,26 @@ func NewAuthService(userRepo repositories.UserRepository, secretKey string) *Aut
 	return &AuthService{userRepo: userRepo, secretKey: secretKey}
 }
 
-func (s *AuthService) Login(ctx context.Context, in *pb_auth.LoginRequest) (*pb_auth.LoginResponse, error) {
-	user, err := s.userRepo.GetUserByUsername(in.Username)
+func (s *AuthService) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_auth.LoginResponse, error) {
+	res, err := s.userRepo.GetUserByUsername(
+		&repositories.GetUserByUsernameRequest{
+			Username: req.Username,
+		})
+
 	if err != nil {
 		return nil, err
 	}
 
-	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(in.Password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(res.User.Password), []byte(req.Password)); err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, errorhandler.NewAPIError(httpcodes.ErrUnauthorized, "Invalid credentials").Error())
 	}
 
-	accessToken, err := s.generateToken(user.ID, 15*time.Minute)
+	accessToken, err := s.generateToken(res.User.ID, 15*time.Minute)
 	if err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	refreshToken, err := s.generateToken(user.ID, 24*time.Hour)
+	refreshToken, err := s.generateToken(res.User.ID, 24*time.Hour)
 	if err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
@@ -49,9 +51,9 @@ func (s *AuthService) Login(ctx context.Context, in *pb_auth.LoginRequest) (*pb_
 	return &pb_auth.LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (s *AuthService) RefreshToken(ctx context.Context, in *pb_auth.RefreshTokenRequest) (*pb_auth.RefreshTokenResponse, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, req *pb_auth.RefreshTokenRequest) (*pb_auth.RefreshTokenResponse, error) {
 	// Validate the refresh token...
-	claims, err := s.validateToken(in.RefreshToken)
+	claims, err := s.validateToken(req.RefreshToken)
 	if err != nil {
 		fmt.Println("Error", err)
 		return nil, err
@@ -66,34 +68,29 @@ func (s *AuthService) RefreshToken(ctx context.Context, in *pb_auth.RefreshToken
 	return &pb_auth.RefreshTokenResponse{AccessToken: accessToken}, nil
 }
 
-func (s *AuthService) generateToken(userID uint, duration time.Duration) (string, error) {
-	// Generate a JWT with the specified duration and the user's username as a claim...
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": userID,
-		"exp":    time.Now().Add(duration).Unix(),
-	})
+func (s *AuthService) CheckBoardUserRole(ctx context.Context, req *pb_auth.CheckBoardUserRoleRequest) (*pb_auth.CheckBoardUserRoleResponse, error) {
+	checkReq := &repositories.CheckBoardUserRoleRequest{
+		UserID:       req.UserID,
+		BoardID:      req.BoardID,
+		RequiredRole: req.RequiredRole,
+	}
 
-	// Sign the token with the secret key...
-	return token.SignedString([]byte(s.secretKey))
+	if err := s.userRepo.CheckBoardUserRole(checkReq); err != nil {
+		return nil, err
+	}
+
+	return &pb_auth.CheckBoardUserRoleResponse{Message: ""}, nil
 }
 
-func (s *AuthService) validateToken(tokenString string) (*jwt.MapClaims, error) {
-	invalidTokenError := status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid token").Error())
-
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, invalidTokenError
-		}
-		return []byte(s.secretKey), nil
-	})
-
-	if err != nil {
-		return nil, invalidTokenError
+func (s *AuthService) CheckBoardVisibility(ctx context.Context, req *pb_auth.CheckBoardVisibilityRequest) (*pb_auth.CheckBoardVisibilityResponse, error) {
+	checkReq := &repositories.CheckBoardVisibilityRequest{
+		UserID:  req.UserID,
+		BoardID: req.BoardID,
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return &claims, nil
-	} else {
-		return nil, invalidTokenError
+	if err := s.userRepo.CheckBoardVisibility(checkReq); err != nil {
+		return nil, err
 	}
+
+	return &pb_auth.CheckBoardVisibilityResponse{Message: ""}, nil
 }

@@ -7,28 +7,44 @@ import (
 	models "github.com/sm888sm/halten-backend/models"
 )
 
-type CreateCardParams struct {
+type CreateCardRequest struct {
 	Card *models.Card
 }
 
-type GetCardByIDParams struct {
+type CreateCardResponse struct {
+	Card *models.Card
+}
+
+type GetCardByIDRequest struct {
 	CardID uint64
 }
 
-type GetCardsByListParams struct {
+type GetCardByIDResponse struct {
+	Card *models.Card
+}
+
+type GetCardsByListRequest struct {
 	ListID uint64
 }
 
-type GetCardsByBoardParams struct {
+type GetCardsByListResponse struct {
+	Cards []*internal_models.CardMeta
+}
+
+type GetCardsByBoardRequest struct {
 	BoardID uint64
 }
 
-type DeleteCardParams struct {
+type GetCardsByBoardResponse struct {
+	Cards []*internal_models.CardMeta
+}
+
+type DeleteCardRequest struct {
 	CardID  uint64
 	BoardID uint64
 }
 
-type MoveCardPositionParams struct {
+type MoveCardPositionRequest struct {
 	CardID      uint64
 	NewPosition int
 	BoardID     uint64
@@ -36,109 +52,109 @@ type MoveCardPositionParams struct {
 	NewListID   uint64
 }
 
-type UpdateCardNameParams struct {
+type UpdateCardNameRequest struct {
 	CardID  uint64
 	Name    string
 	BoardID uint64
 }
 
-type UpdateCardDescriptionParams struct {
+type UpdateCardDescriptionRequest struct {
 	CardID         uint64
 	NewDescription string
 	BoardID        uint64
 }
 
-type AddCardLabelParams struct {
+type AddCardLabelRequest struct {
 	LabelID uint64
 	CardID  uint64
 	BoardID uint64
 }
 
-type RemoveCardLabelParams struct {
+type RemoveCardLabelRequest struct {
 	LabelID uint64
 	CardID  uint64
 	BoardID uint64
 }
 
-type SetCardDatesParams struct {
+type SetCardDatesRequest struct {
 	StartDate *time.Time
 	DueDate   *time.Time
 	CardID    uint64
 	BoardID   uint64
 }
 
-type MarkCardCompleteParams struct {
+type MarkCardCompleteRequest struct {
 	CardID  uint64
 	BoardID uint64
 }
 
-type AddCardAttachmentParams struct {
+type AddCardAttachmentRequest struct {
 	AttachmentID uint64
 	CardID       uint64
 	BoardID      uint64
 }
 
-type RemoveCardAttachmentParams struct {
+type RemoveCardAttachmentRequest struct {
 	AttachmentID uint64
 	CardID       uint64
 	BoardID      uint64
 }
 
-type AddCardCommentParams struct {
+type AddCardCommentRequest struct {
 	Comment models.Comment
 	CardID  uint64
 	BoardID uint64
 	UserID  uint64
 }
 
-type RemoveCardCommentParams struct {
+type RemoveCardCommentRequest struct {
 	CommentID uint64
 	CardID    uint64
 	BoardID   uint64
 	UserID    uint64
 }
 
-type AddCardMembersParams struct {
+type AddCardMembersRequest struct {
 	UserIDs []uint64
 	CardID  uint64
 	BoardID uint64
 }
 
-type RemoveCardMembersParams struct {
+type RemoveCardMembersRequest struct {
 	UserIDs []uint64
 	CardID  uint64
 	BoardID uint64
 }
 
-type ArchiveCardParams struct {
+type ArchiveCardRequest struct {
 	CardID  uint64
 	BoardID uint64
 }
 
-type RestoreCardParams struct {
+type RestoreCardRequest struct {
 	CardID  uint64
 	BoardID uint64
 }
 
 type CardRepository interface {
-	CreateCard(params CreateCardParams) error
-	GetCardByID(params GetCardByIDParams) (*models.Card, error)
-	GetCardsByList(params GetCardsByListParams) ([]*internal_models.CardMeta, error)
-	GetCardsByBoard(params GetCardsByBoardParams) ([]*internal_models.CardMeta, error)
-	MoveCardPosition(params MoveCardPositionParams) error
-	UpdateCardName(params UpdateCardNameParams) error
-	UpdateCardDescription(params UpdateCardDescriptionParams) error
-	AddCardLabel(params AddCardLabelParams) error
-	RemoveCardLabel(params RemoveCardLabelParams) error
-	SetCardDates(params SetCardDatesParams) error
-	MarkCardComplete(params MarkCardCompleteParams) error
-	AddCardAttachment(params AddCardAttachmentParams) error
-	RemoveCardAttachment(params RemoveCardAttachmentParams) error
-	AddCardComment(params AddCardCommentParams) error
-	RemoveCardComment(params RemoveCardCommentParams) error
-	AddCardMembers(params AddCardMembersParams) error
-	RemoveCardMembers(params RemoveCardMembersParams) error
-	ArchiveCard(params ArchiveCardParams) error
-	RestoreCard(params RestoreCardParams) error
-	DeleteCard(params DeleteCardParams) error
+	CreateCard(req *CreateCardRequest) (*CreateCardResponse, error)
+	GetCardByID(req *GetCardByIDRequest) (*GetCardByIDResponse, error)
+	GetCardsByList(req *GetCardsByListRequest) (*GetCardsByListResponse, error)
+	GetCardsByBoard(req *GetCardsByBoardRequest) (*GetCardsByBoardResponse, error)
+	MoveCardPosition(req *MoveCardPositionRequest) error
+	UpdateCardName(req *UpdateCardNameRequest) error
+	UpdateCardDescription(req *UpdateCardDescriptionRequest) error
+	AddCardLabel(req *AddCardLabelRequest) error
+	RemoveCardLabel(req *RemoveCardLabelRequest) error
+	SetCardDates(req *SetCardDatesRequest) error
+	MarkCardComplete(req *MarkCardCompleteRequest) error
+	AddCardAttachment(req *AddCardAttachmentRequest) error
+	RemoveCardAttachment(req *RemoveCardAttachmentRequest) error
+	AddCardComment(req *AddCardCommentRequest) error
+	RemoveCardComment(req *RemoveCardCommentRequest) error
+	AddCardMembers(req *AddCardMembersRequest) error
+	RemoveCardMembers(req *RemoveCardMembersRequest) error
+	ArchiveCard(req *ArchiveCardRequest) error
+	RestoreCard(req *RestoreCardRequest) error
+	DeleteCard(req *DeleteCardRequest) error
 }

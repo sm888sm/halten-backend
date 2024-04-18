@@ -35,25 +35,27 @@ func (s *UserService) CreateUser(ctx context.Context, req *pb_user.CreateUserReq
 		// Add other fields as necessary
 	}
 
-	err = s.userRepo.CreateUser(user)
+	repoRes, err := s.userRepo.CreateUser(&repositories.CreateUserRequest{User: user})
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb_user.CreateUserResponse{
-		UserID:   uint64(user.ID),
-		Username: user.Username}, nil
+		UserID:   uint64(repoRes.User.ID),
+		Username: repoRes.User.Email}, nil
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, req *pb_user.GetUserByIDRequest) (*pb_user.GetUserByIDResponse, error) {
-	user, err := s.userRepo.GetUserByID(int(req.UserID))
+	repoRes, err := s.userRepo.GetUserByID(&repositories.GetUserByIDRequest{
+		UserID: req.UserID,
+	})
 	if err != nil {
 		return nil, err
 	}
 	pbUser := &pb_user.User{
-		UserID:   uint64(user.ID),
-		Username: user.Username,
-		Email:    user.Email,
+		UserID:   uint64(repoRes.User.ID),
+		Username: repoRes.User.Username,
+		Email:    repoRes.User.Email,
 		// Add other fields as necessary
 	}
 
@@ -61,21 +63,26 @@ func (s *UserService) GetUserByID(ctx context.Context, req *pb_user.GetUserByIDR
 }
 
 func (s *UserService) GetUserByUsername(ctx context.Context, req *pb_user.GetUserByUsernameRequest) (*pb_user.GetUserByUsernameResponse, error) {
-	user, err := s.userRepo.GetUserByUsername(req.Username)
+	repoRes, err := s.userRepo.GetUserByUsername(&repositories.GetUserByUsernameRequest{
+		Username: req.Username,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 	pbUser := &pb_user.User{
-		UserID:   uint64(user.ID),
-		Username: user.Username,
-		Email:    user.Email,
+		UserID:   uint64(repoRes.User.ID),
+		Username: repoRes.User.Username,
+		Email:    repoRes.User.Email,
 		// Add other fields as necessary
 	}
 	return &pb_user.GetUserByUsernameResponse{User: pbUser}, nil
 }
 
 func (s *UserService) UpdateEmail(ctx context.Context, req *pb_user.UpdateEmailRequest) (*pb_user.UpdateEmailResponse, error) {
-	err := s.userRepo.UpdateEmail(uint(req.UserID), req.NewEmail) // Updated
+	err := s.userRepo.UpdateEmail(&repositories.UpdateEmailRequest{
+		UserID: req.UserID,
+	}) // Updated
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +90,10 @@ func (s *UserService) UpdateEmail(ctx context.Context, req *pb_user.UpdateEmailR
 }
 
 func (s *UserService) UpdatePassword(ctx context.Context, req *pb_user.UpdatePasswordRequest) (*pb_user.UpdatePasswordResponse, error) {
-	err := s.userRepo.UpdatePassword(uint(req.UserID), req.NewPassword) // Updated
+	err := s.userRepo.UpdatePassword(&repositories.UpdatePasswordRequest{
+		UserID:      req.UserID,
+		NewPassword: req.NewPassword,
+	}) // Updated
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +101,10 @@ func (s *UserService) UpdatePassword(ctx context.Context, req *pb_user.UpdatePas
 }
 
 func (s *UserService) UpdateUsername(ctx context.Context, req *pb_user.UpdateUsernameRequest) (*pb_user.UpdateUsernameResponse, error) {
-	err := s.userRepo.UpdateUsername(req.OldUsername, req.NewUsername)
+	err := s.userRepo.UpdateUsername(&repositories.UpdateUsernameRequest{
+		UserID:   req.UserID,
+		Username: req.Username,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +112,10 @@ func (s *UserService) UpdateUsername(ctx context.Context, req *pb_user.UpdateUse
 }
 
 func (s *UserService) ConfirmNewEmail(ctx context.Context, req *pb_user.ConfirmNewEmailRequest) (*pb_user.ConfirmNewEmailResponse, error) {
-	err := s.userRepo.ConfirmNewEmail(req.Username, req.Token)
+	err := s.userRepo.ConfirmNewEmail(&repositories.ConfirmNewEmailRequest{
+		UserID: req.UserID,
+		Token:  req.Token,
+	})
 	if err != nil {
 		return nil, err
 	}

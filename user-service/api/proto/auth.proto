@@ -26,8 +26,29 @@ message RefreshTokenResponse {
     string accessToken = 1;
 }
 
+message CheckBoardUserRoleRequest {
+    uint64 userID = 1;
+    uint64 boardID = 2;
+    string requiredRole = 3;
+}
+
+message CheckBoardUserRoleResponse {
+    string message = 1;
+}
+
+message CheckBoardVisibilityRequest {
+    uint64 userID = 1;
+    uint64 boardID = 2;
+}
+
+message CheckBoardVisibilityResponse {
+    string message = 1;
+}
+
 // The Authentication Service Definition
 service AuthService {
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+    rpc CheckBoardUserRole(CheckBoardUserRoleRequest) returns (CheckBoardUserRoleResponse);
+    rpc CheckBoardVisibility(CheckBoardVisibilityRequest) returns (CheckBoardVisibilityResponse);
 }

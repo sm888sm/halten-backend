@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
+	CheckBoardUserRole(ctx context.Context, in *CheckBoardUserRoleRequest, opts ...grpc.CallOption) (*CheckBoardUserRoleResponse, error)
+	CheckBoardVisibility(ctx context.Context, in *CheckBoardVisibilityRequest, opts ...grpc.CallOption) (*CheckBoardVisibilityResponse, error)
 }
 
 type authServiceClient struct {
@@ -52,12 +54,32 @@ func (c *authServiceClient) RefreshToken(ctx context.Context, in *RefreshTokenRe
 	return out, nil
 }
 
+func (c *authServiceClient) CheckBoardUserRole(ctx context.Context, in *CheckBoardUserRoleRequest, opts ...grpc.CallOption) (*CheckBoardUserRoleResponse, error) {
+	out := new(CheckBoardUserRoleResponse)
+	err := c.cc.Invoke(ctx, "/userpb.AuthService/CheckBoardUserRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) CheckBoardVisibility(ctx context.Context, in *CheckBoardVisibilityRequest, opts ...grpc.CallOption) (*CheckBoardVisibilityResponse, error) {
+	out := new(CheckBoardVisibilityResponse)
+	err := c.cc.Invoke(ctx, "/userpb.AuthService/CheckBoardVisibility", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
+	CheckBoardUserRole(context.Context, *CheckBoardUserRoleRequest) (*CheckBoardUserRoleResponse, error)
+	CheckBoardVisibility(context.Context, *CheckBoardVisibilityRequest) (*CheckBoardVisibilityResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -70,6 +92,12 @@ func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedAuthServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
+}
+func (UnimplementedAuthServiceServer) CheckBoardUserRole(context.Context, *CheckBoardUserRoleRequest) (*CheckBoardUserRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckBoardUserRole not implemented")
+}
+func (UnimplementedAuthServiceServer) CheckBoardVisibility(context.Context, *CheckBoardVisibilityRequest) (*CheckBoardVisibilityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckBoardVisibility not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 
@@ -120,6 +148,42 @@ func _AuthService_RefreshToken_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_CheckBoardUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckBoardUserRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CheckBoardUserRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/userpb.AuthService/CheckBoardUserRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CheckBoardUserRole(ctx, req.(*CheckBoardUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_CheckBoardVisibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckBoardVisibilityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CheckBoardVisibility(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/userpb.AuthService/CheckBoardVisibility",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CheckBoardVisibility(ctx, req.(*CheckBoardVisibilityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +198,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefreshToken",
 			Handler:    _AuthService_RefreshToken_Handler,
+		},
+		{
+			MethodName: "CheckBoardUserRole",
+			Handler:    _AuthService_CheckBoardUserRole_Handler,
+		},
+		{
+			MethodName: "CheckBoardVisibility",
+			Handler:    _AuthService_CheckBoardVisibility_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
