@@ -41,74 +41,159 @@ func (r *GormCardRepository) CreateCard(req *CreateCardRequest) (*CreateCardResp
 }
 
 func (r *GormCardRepository) GetCardByID(req *GetCardByIDRequest) (*GetCardByIDResponse, error) {
-	var res GetCardByIDResponse
 	var card models.Card
 
+	if err := r.db.Where("id = ? AND archived = false", req.CardID).First(&card).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Card not found")
+		}
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
+	var labelIDs []uint64
+	r.db.Model(&models.Label{}).Where("card_id = ?", card.ID).Pluck("id", &labelIDs)
+
+	var memberIDs []uint64
+	r.db.Model(&models.CardMember{}).Where("card_id = ?", card.ID).Pluck("id", &memberIDs)
+
+	var attachmentIDs []uint64
+	r.db.Model(&models.Attachment{}).Where("card_id = ?", card.ID).Pluck("id", &attachmentIDs)
+
+	cardDTO := &internal_models.CardDTO{
+		ID:          card.ID,
+		ListID:      card.ListID,
+		BoardID:     card.BoardID,
+		Name:        card.Name,
+		Position:    card.Position,
+		Labels:      labelIDs,
+		Members:     memberIDs,
+		Attachments: attachmentIDs,
+		IsCompleted: card.IsCompleted,
+		StartDate:   card.StartDate,
+		DueDate:     card.DueDate,
+		CreatedAt:   card.CreatedAt,
+		UpdatedAt:   card.UpdatedAt,
+	}
+
+	return &GetCardByIDResponse{Card: cardDTO}, nil
+}
+
+func (r *GormCardRepository) GetCardsByList(req *GetCardsByListRequest) (*GetCardsByListResponse, error) {
+	var cardDTOs []*internal_models.CardMetaDTO
+
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-			return db.Select("ID")
-		}).Preload("Labels", func(db *gorm.DB) *gorm.DB {
-			return db.Select("ID")
-		}).Preload("Members", func(db *gorm.DB) *gorm.DB {
-			return db.Select("ID")
-		}).Select("ID", "BoardID", "ListID", "Name", "Description", "Position", "IsCompleted", "StartDate", "DueDate", "CreatedAt", "UpdatedAt").
-			Where("id = ? AND archived = false", req.CardID).
-			First(&card).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Card not found")
-			}
-			return errorhandler.NewGrpcInternalError()
+		var cards []*models.Card
+		if err := tx.Where("list_id = ? AND archived = false", req.ListID).Find(&cards).Error; err != nil {
+			return err
 		}
 
-		res.Card = &card
+		for _, card := range cards {
+			var labelIDs []uint64
+			if err := tx.Model(&models.Label{}).Where("card_id = ?", card.ID).Pluck("id", &labelIDs).Error; err != nil {
+				return err
+			}
+
+			var memberIDs []uint64
+			if err := tx.Model(&models.CardMember{}).Where("card_id = ?", card.ID).Pluck("id", &memberIDs).Error; err != nil {
+				return err
+			}
+
+			var totalAttachment int64
+			if err := tx.Model(&models.Attachment{}).Where("card_id = ?", card.ID).Count(&totalAttachment).Error; err != nil {
+				return err
+			}
+
+			var totalComment int64
+			if err := tx.Model(&models.Comment{}).Where("card_id = ?", card.ID).Count(&totalComment).Error; err != nil {
+				return err
+			}
+
+			cardDTO := &internal_models.CardMetaDTO{
+				ID:              card.ID,
+				ListID:          card.ListID,
+				BoardID:         card.BoardID,
+				Name:            card.Name,
+				Position:        card.Position,
+				IsCompleted:     card.IsCompleted,
+				StartDate:       card.StartDate,
+				DueDate:         card.DueDate,
+				CreatedAt:       card.CreatedAt,
+				UpdatedAt:       card.UpdatedAt,
+				Labels:          labelIDs,
+				Members:         memberIDs,
+				TotalAttachment: uint64(totalAttachment),
+				TotalComment:    uint64(totalComment),
+			}
+			cardDTOs = append(cardDTOs, cardDTO)
+		}
+
 		return nil
 	})
 
 	if err != nil {
-		return nil, err
-	}
-
-	return &res, nil
-}
-
-func (r *GormCardRepository) GetCardsByList(req *GetCardsByListRequest) (*GetCardsByListResponse, error) {
-	var cards []*internal_models.CardMeta
-	if err := r.db.Model(&models.Card{}).
-		Select("id, list_id, board_id, name, position, is_completed, start_date, due_date, created_at, updated_at, "+
-			"(SELECT COUNT(*) FROM attachments WHERE card_id = cards.id) as total_attachment, "+
-			"(SELECT COUNT(*) FROM comments WHERE card_id = cards.id) as total_comment").
-		Preload("Labels", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id")
-		}).
-		Preload("Members", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id")
-		}).
-		Where("list_id = ? AND archived = false", req.ListID).
-		Find(&cards).Error; err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	return &GetCardsByListResponse{Cards: cards}, nil
+	return &GetCardsByListResponse{Cards: cardDTOs}, nil
 }
 
 func (r *GormCardRepository) GetCardsByBoard(req *GetCardsByBoardRequest) (*GetCardsByBoardResponse, error) {
-	var cards []*internal_models.CardMeta
-	if err := r.db.Model(&models.Card{}).
-		Select("id, list_id, board_id, name, position, is_completed, start_date, due_date, created_at, updated_at, "+
-			"(SELECT COUNT(*) FROM attachments WHERE card_id = cards.id) as total_attachment, "+
-			"(SELECT COUNT(*) FROM comments WHERE card_id = cards.id) as total_comment").
-		Preload("Labels", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id")
-		}).
-		Preload("Members", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id")
-		}).
-		Where("board_id = ?", req.BoardID).
-		Find(&cards).Error; err != nil {
+	var cardDTOs []*internal_models.CardMetaDTO
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var cards []*models.Card
+		if err := tx.Where("list_id = ? AND archived = false", req.BoardID).Find(&cards).Error; err != nil {
+			return err
+		}
+
+		for _, card := range cards {
+			var labelIDs []uint64
+			if err := tx.Model(&models.Label{}).Where("card_id = ?", card.ID).Pluck("id", &labelIDs).Error; err != nil {
+				return err
+			}
+
+			var memberIDs []uint64
+			if err := tx.Model(&models.CardMember{}).Where("card_id = ?", card.ID).Pluck("id", &memberIDs).Error; err != nil {
+				return err
+			}
+
+			var totalAttachment int64
+			if err := tx.Model(&models.Attachment{}).Where("card_id = ?", card.ID).Count(&totalAttachment).Error; err != nil {
+				return err
+			}
+
+			var totalComment int64
+			if err := tx.Model(&models.Comment{}).Where("card_id = ?", card.ID).Count(&totalComment).Error; err != nil {
+				return err
+			}
+
+			cardDTO := &internal_models.CardMetaDTO{
+				ID:              card.ID,
+				ListID:          card.ListID,
+				BoardID:         card.BoardID,
+				Name:            card.Name,
+				Position:        card.Position,
+				IsCompleted:     card.IsCompleted,
+				StartDate:       card.StartDate,
+				DueDate:         card.DueDate,
+				CreatedAt:       card.CreatedAt,
+				UpdatedAt:       card.UpdatedAt,
+				Labels:          labelIDs,
+				Members:         memberIDs,
+				TotalAttachment: uint64(totalAttachment),
+				TotalComment:    uint64(totalComment),
+			}
+			cardDTOs = append(cardDTOs, cardDTO)
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	return &GetCardsByBoardResponse{Cards: cards}, nil
+	return &GetCardsByBoardResponse{Cards: cardDTOs}, nil
 }
 
 func (r *GormCardRepository) MoveCardPosition(req *MoveCardPositionRequest) error {
@@ -133,7 +218,7 @@ func (r *GormCardRepository) MoveCardPosition(req *MoveCardPositionRequest) erro
 		// Find the card to be moved
 		var movingCard *models.Card
 		for i, c := range oldCards {
-			if c.ID == uint(req.CardID) {
+			if c.ID == req.CardID {
 				movingCard = c
 				oldCards = append(oldCards[:i], oldCards[i+1:]...)
 				break
@@ -142,7 +227,7 @@ func (r *GormCardRepository) MoveCardPosition(req *MoveCardPositionRequest) erro
 
 		// Update the positions of the remaining cards in the old list
 		for i, c := range oldCards {
-			c.Position = i + 1
+			c.Position = int64(i + 1)
 			if err := tx.Save(&c).Error; err != nil {
 				return err
 			}
@@ -165,7 +250,7 @@ func (r *GormCardRepository) MoveCardPosition(req *MoveCardPositionRequest) erro
 			copy(newCards[req.NewPosition+1:], newCards[req.NewPosition:])
 			newCards[req.NewPosition] = movingCard
 			for i, c := range newCards {
-				c.Position = i + 1
+				c.Position = int64(i + 1)
 				if err := tx.Save(&c).Error; err != nil {
 					return err
 				}
@@ -207,7 +292,7 @@ func (r *GormCardRepository) UpdateCardName(req *UpdateCardNameRequest) error {
 func (r *GormCardRepository) UpdateCardDescription(req *UpdateCardDescriptionRequest) error {
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		card := &models.Card{Model: gorm.Model{ID: uint(req.CardID)}, BoardID: uint(req.BoardID)}
+		card := &models.Card{BaseModel: models.BaseModel{ID: req.CardID}, BoardID: req.BoardID}
 		if err := tx.First(card).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Card not found")
@@ -215,8 +300,8 @@ func (r *GormCardRepository) UpdateCardDescription(req *UpdateCardDescriptionReq
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		if card.Description != req.NewDescription {
-			db := tx.Model(card).Update("Description", req.NewDescription)
+		if card.Description != req.Description {
+			db := tx.Model(card).Update("Description", req.Description)
 			if db.Error != nil {
 				return errorhandler.NewGrpcInternalError()
 			}
@@ -238,7 +323,7 @@ func (r *GormCardRepository) AddCardLabel(req *AddCardLabelRequest) error {
 			return err
 		}
 
-		if err := tx.Model(&models.Card{Model: gorm.Model{ID: uint(req.CardID)}}).Association("Labels").Append(existingLabel); err != nil {
+		if err := tx.Model(&models.Card{BaseModel: models.BaseModel{ID: req.CardID}}).Association("Labels").Append(existingLabel); err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
@@ -268,7 +353,7 @@ func (r *GormCardRepository) RemoveCardLabel(req *RemoveCardLabelRequest) error 
 			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Label not found in the card")
 		}
 
-		if err := tx.Model(&models.Card{Model: gorm.Model{ID: uint(req.CardID)}}).Association("Labels").Delete(existingLabel); err != nil {
+		if err := tx.Model(&models.Card{BaseModel: models.BaseModel{ID: req.CardID}}).Association("Labels").Delete(existingLabel); err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
@@ -278,7 +363,7 @@ func (r *GormCardRepository) RemoveCardLabel(req *RemoveCardLabelRequest) error 
 
 func (r *GormCardRepository) SetCardDates(req *SetCardDatesRequest) error {
 	// Ensure startDate is no later than dueDate
-	if req.StartDate != nil && req.DueDate != nil && req.StartDate.After(*req.DueDate) {
+	if req.StartDate == nil && req.DueDate == nil && req.StartDate.After(*req.DueDate) {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Start date cannot be later than due date")
 	}
 
@@ -301,7 +386,7 @@ func (r *GormCardRepository) SetCardDates(req *SetCardDatesRequest) error {
 		}
 
 		// If both startDate and dueDate are unset, unmark the card as complete
-		if req.StartDate == nil && req.DueDate == nil && card.IsCompleted {
+		if req.StartDate.IsZero() && req.DueDate.IsZero() && card.IsCompleted {
 			card.IsCompleted = false
 			changes = true
 		}
@@ -325,7 +410,7 @@ func (r *GormCardRepository) MarkCardComplete(req *MarkCardCompleteRequest) erro
 		}
 
 		// Only cards with a due date can be marked as complete
-		if card.DueDate == nil {
+		if card.DueDate.IsZero() {
 			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Card cannot be marked as complete without a due date")
 		}
 
@@ -356,7 +441,7 @@ func (r *GormCardRepository) AddCardAttachment(req *AddCardAttachmentRequest) er
 			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Card cannot have more than 10 attachments")
 		}
 
-		attachment := &models.Attachment{Model: gorm.Model{ID: uint(req.AttachmentID)}}
+		attachment := &models.Attachment{BaseModel: models.BaseModel{ID: req.AttachmentID}}
 		if err := tx.First(attachment).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Attachment not found")
@@ -369,7 +454,7 @@ func (r *GormCardRepository) AddCardAttachment(req *AddCardAttachmentRequest) er
 			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Attachment does not belong to the same board")
 		}
 
-		attachment.CardID = uint(req.CardID)
+		attachment.CardID = req.CardID
 
 		if err := tx.Save(attachment).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
@@ -413,8 +498,8 @@ func (r *GormCardRepository) AddCardComment(req *AddCardCommentRequest) error {
 			return err
 		}
 
-		req.Comment.CardID = uint(req.CardID)
-		req.Comment.UserID = uint(req.UserID)
+		req.Comment.CardID = req.CardID
+		req.Comment.UserID = req.UserID
 		if err := tx.Create(&req.Comment).Error; err != nil {
 			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, err.Error())
 		}
@@ -430,7 +515,7 @@ func (r *GormCardRepository) RemoveCardComment(req *RemoveCardCommentRequest) er
 			return err
 		}
 
-		comment := &models.Comment{Model: gorm.Model{ID: uint(req.CommentID)}, CardID: uint(req.CardID)}
+		comment := &models.Comment{BaseModel: models.BaseModel{ID: req.CommentID}, CardID: req.CardID}
 		if err := tx.First(comment).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Comment not found")

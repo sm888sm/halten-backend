@@ -1,12 +1,8 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type List struct {
-	gorm.Model
-	BoardID    uint   `gorm:"foreign_key"`
+	BaseModel
+	BoardID    uint64 `gorm:"foreign_key"`
 	Name       string `gorm:"type:varchar(50)"`
 	Position   int
 	IsArchived bool

@@ -74,7 +74,16 @@ func main() {
 	boardService := services.NewBoardService(boardRepo, svc, publishers)
 
 	// Create gRPC server with validation interceptor
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(middlewares.ValidationInterceptor))
+
+	AuthInterceptor := middlewares.NewAuthInterceptor(db.SQLConn, svc)
+	validatorInterceptor := middlewares.NewValidatorInterceptor(db.SQLConn)
+
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			AuthInterceptor.AuthInterceptor,
+			validatorInterceptor.ValidationInterceptor,
+		),
+	)
 
 	// Register services
 	pb.RegisterBoardServiceServer(grpcServer, boardService)

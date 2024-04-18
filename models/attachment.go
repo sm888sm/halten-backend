@@ -1,13 +1,9 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Attachment struct {
-	gorm.Model
-	BoardID   uint `gorm:"foreignKey:CardID"`
-	CardID    uint `gorm:"foreignKey:CardID"`
+	BaseModel
+	BoardID   uint64 `gorm:"foreignKey:CardID"`
+	CardID    uint64 `gorm:"foreignKey:CardID"`
 	FileName  string
 	FilePath  string
 	Type      string `gorm:"type:type_enum;default:'document'"`

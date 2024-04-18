@@ -1,13 +1,9 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Watch struct {
-	gorm.Model
-	UserID  uint
-	BoardID *uint
-	ListID  *uint
-	CardID  *uint
+	BaseModel
+	UserID  uint64
+	BoardID *uint64
+	ListID  *uint64
+	CardID  *uint64
 }

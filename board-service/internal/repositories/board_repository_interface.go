@@ -5,107 +5,106 @@ import (
 	models "github.com/sm888sm/halten-backend/models"
 )
 
-type CreateBoardParams struct {
+type CreateBoardRequest struct {
 	Board *models.Board
 }
 
-type GetBoardByIDParams struct {
+type CreateBoardResponse struct {
+	Board *models.Board
+}
+
+type GetBoardByIDRequest struct {
 	BoardID uint64
 	UserID  uint64
 }
 
-type GetBoardListParams struct {
+type GetBoardByIDResponse struct {
+	Board *models.Board
+}
+
+type GetBoardListRequest struct {
 	PageNumber uint64
 	PageSize   uint64
 	UserID     uint64
 }
 
-type GetBoardUsersParams struct {
+type GetBoardListResponse struct {
+	Boards     []*internal_models.BoardMetaDTO
+	Pagination *internal_models.Pagination
+}
+
+type GetBoardMembersRequest struct {
 	BoardID uint64
 }
 
-type UpdateBoardParams struct {
+type GetBoardMembersResponse struct {
+	Members []*internal_models.MemberDTO
+}
+
+type UpdateBoardNameRequest struct {
 	BoardID uint64
 	Name    string
 }
 
-type AddBoardUsersParams struct {
+type AddBoardUsersRequest struct {
 	BoardID uint64
-	UserIDs []uint
+	UserIDs []uint64
 	Role    string
 }
 
-type RemoveBoardUsersParams struct {
+type RemoveBoardUsersRequest struct {
 	BoardID uint64
-	UserIDs []uint
+	UserIDs []uint64
 }
 
-type AssignBoardUserRoleParams struct {
-	BoardID      uint64
-	AssignUserID uint
-	Role         string
+type AssignBoardUserRoleRequest struct {
+	BoardID uint64
+	UserID  uint64
+	UserIDs []uint64
+	Role    string
 }
 
-type ChangeBoardOwnerParams struct {
+type ChangeBoardOwnerRequest struct {
 	BoardID        uint64
 	CurrentOwnerID uint64
 	NewOwnerID     uint64
 }
 
-type GetArchivedBoardListParams struct {
+type GetArchivedBoardListRequest struct {
 	PageNumber uint64
 	PageSize   uint64
 	UserID     uint64
 }
 
-type RestoreBoardParams struct {
+type GetArchivedBoardListResponse struct {
+	Boards     []*internal_models.BoardMetaDTO
+	Pagination *internal_models.Pagination
+}
+
+type RestoreBoardRequest struct {
 	BoardID uint64
 }
 
-type ArchiveBoardParams struct {
+type ArchiveBoardRequest struct {
 	BoardID uint64
 }
 
-type DeleteBoardParams struct {
+type DeleteBoardRequest struct {
 	BoardID uint64
-}
-
-type GetBoardPermissionByCardParams struct {
-	CardID uint
-	UserID uint
-}
-
-type GetBoardPermissionByCardResult struct {
-	BoardID    uint
-	Visibility string
-	Permission *models.Permission
-}
-
-type GetBoardPermissionByListParams struct {
-	ListID uint
-	UserID uint
-}
-
-type GetBoardPermissionByListResult struct {
-	BoardID    uint
-	Visibility string
-	Permission *models.Permission
 }
 
 type BoardRepository interface {
-	CreateBoard(params CreateBoardParams) (*models.Board, error)
-	GetBoardByID(params GetBoardByIDParams) (*models.Board, error)
-	GetBoardList(params GetBoardListParams) (*internal_models.BoardList, error)
-	GetBoardUsers(params GetBoardUsersParams) ([]models.User, error)
-	UpdateBoard(params UpdateBoardParams) error
-	AddBoardUsers(params AddBoardUsersParams) error
-	RemoveBoardUsers(params RemoveBoardUsersParams) error
-	AssignBoardUserRole(params AssignBoardUserRoleParams) error
-	ChangeBoardOwner(params ChangeBoardOwnerParams) error
-	GetArchivedBoardList(params GetArchivedBoardListParams) (*internal_models.BoardList, error)
-	RestoreBoard(params RestoreBoardParams) error
-	ArchiveBoard(params ArchiveBoardParams) error
-	DeleteBoard(params DeleteBoardParams) error
-	GetBoardPermissionByCard(params GetBoardPermissionByCardParams) (*GetBoardPermissionByCardResult, error)
-	GetBoardPermissionByList(params GetBoardPermissionByListParams) (*GetBoardPermissionByListResult, error)
+	CreateBoard(req *CreateBoardRequest) (*CreateBoardResponse, error)
+	GetBoardByID(req *GetBoardByIDRequest) (*GetBoardByIDResponse, error)
+	GetBoardList(req *GetBoardListRequest) (*GetBoardListResponse, error)
+	GetBoardMembers(req *GetBoardMembersRequest) (*GetBoardMembersResponse, error)
+	UpdateBoardName(req *UpdateBoardNameRequest) error
+	AddBoardUsers(req *AddBoardUsersRequest) error
+	RemoveBoardUsers(req *RemoveBoardUsersRequest) error
+	AssignBoardUserRole(req *AssignBoardUserRoleRequest) error
+	ChangeBoardOwner(req *ChangeBoardOwnerRequest) error
+	GetArchivedBoardList(req *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error)
+	RestoreBoard(req *RestoreBoardRequest) error
+	ArchiveBoard(req *ArchiveBoardRequest) error
+	DeleteBoard(req *DeleteBoardRequest) error
 }

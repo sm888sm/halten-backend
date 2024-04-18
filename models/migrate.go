@@ -28,7 +28,7 @@ func Migrate(db *gorm.DB) {
 		&Attachment{},
 		&Label{},
 		&Notification{},
-		&Permission{},
+		&BoardMember{},
 		&Watch{},
 	)
 }

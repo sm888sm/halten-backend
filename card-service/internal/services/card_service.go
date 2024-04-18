@@ -28,8 +28,8 @@ func (s *CardService) CreateCard(ctx context.Context, req *pb_card.CreateCardReq
 
 	card := &models.Card{
 		Name:    req.Name,
-		BoardID: uint(boardID),
-		ListID:  uint(req.ListID),
+		BoardID: boardID,
+		ListID:  req.ListID,
 	}
 
 	repoRes, err := s.cardRepo.CreateCard(&repositories.CreateCardRequest{Card: card})
@@ -53,18 +53,6 @@ func (s *CardService) GetCardByID(ctx context.Context, req *pb_card.GetCardByIDR
 
 	card := repoRes.Card
 
-	// Convert slices of Attachment, Label, and User to slices of uint64 for protobuf
-	var attachments, labels, members []uint64
-	for _, a := range card.Attachments {
-		attachments = append(attachments, uint64(a.ID))
-	}
-	for _, l := range card.Labels {
-		labels = append(labels, uint64(l.ID))
-	}
-	for _, m := range card.Members {
-		members = append(members, uint64(m.ID))
-	}
-
 	return &pb_card.GetCardByIDResponse{
 		Card: &pb_card.Card{
 			CardID:      uint64(card.ID),
@@ -73,9 +61,9 @@ func (s *CardService) GetCardByID(ctx context.Context, req *pb_card.GetCardByIDR
 			Position:    int64(card.Position),
 			StartDate:   timestamppb.New(*card.StartDate),
 			DueDate:     timestamppb.New(*card.DueDate),
-			Attachments: attachments,
-			Labels:      labels,
-			Members:     members,
+			Attachments: card.Attachments,
+			Labels:      card.Labels,
+			Members:     card.Members,
 			CreatedAt:   timestamppb.New(card.CreatedAt),
 			UpdatedAt:   timestamppb.New(card.UpdatedAt),
 		},
@@ -92,31 +80,20 @@ func (s *CardService) GetCardsByList(ctx context.Context, req *pb_card.GetCardsB
 
 	var pb_cardCards []*pb_card.CardMeta
 	for _, c := range repoRes.Cards {
-		// Convert slice of Label to slice of uint64 for protobuf
-		var labels []uint64
-		for _, l := range c.Labels {
-			labels = append(labels, uint64(l.ID))
-		}
-
-		var members []uint64
-		for _, l := range c.Members {
-			members = append(members, uint64(l.ID))
-		}
-
 		pb_cardCards = append(pb_cardCards, &pb_card.CardMeta{
 			CardID:          c.ID,
 			ListID:          c.ListID,
 			BoardID:         c.BoardID,
 			Name:            c.Name,
-			Position:        int64(c.Position),
+			Position:        c.Position,
 			StartDate:       timestamppb.New(*c.StartDate),
 			DueDate:         timestamppb.New(*c.DueDate),
-			Labels:          labels,
-			Members:         members,
+			Labels:          c.Labels,
+			Members:         c.Members,
 			TotalAttachment: c.TotalAttachment,
 			TotalComment:    c.TotalComment,
-			CreatedAt:       timestamppb.New(*c.CreatedAt),
-			UpdatedAt:       timestamppb.New(*c.UpdatedAt),
+			CreatedAt:       timestamppb.New(c.CreatedAt),
+			UpdatedAt:       timestamppb.New(c.UpdatedAt),
 		})
 	}
 
@@ -137,29 +114,20 @@ func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb_card.GetCards
 
 	var pb_cardCards []*pb_card.CardMeta
 	for _, c := range repoRes.Cards {
-		// Convert slice of Label to slice of uint64 for protobuf
-		var labels []uint64
-		for _, l := range c.Labels {
-			labels = append(labels, uint64(l.ID))
-		}
-
-		var members []uint64
-		for _, l := range c.Members {
-			members = append(members, uint64(l.ID))
-		}
-
 		pb_cardCards = append(pb_cardCards, &pb_card.CardMeta{
 			CardID:          c.ID,
 			ListID:          c.ListID,
 			BoardID:         c.BoardID,
 			Name:            c.Name,
-			Position:        int64(c.Position),
+			Position:        c.Position,
 			StartDate:       timestamppb.New(*c.StartDate),
 			DueDate:         timestamppb.New(*c.DueDate),
-			Labels:          labels,
-			Members:         members,
+			Labels:          c.Labels,
+			Members:         c.Members,
 			TotalAttachment: c.TotalAttachment,
 			TotalComment:    c.TotalComment,
+			CreatedAt:       timestamppb.New(c.CreatedAt),
+			UpdatedAt:       timestamppb.New(c.UpdatedAt),
 		})
 	}
 
@@ -176,7 +144,7 @@ func (s *CardService) MoveCardPosition(ctx context.Context, req *pb_card.MoveCar
 
 	repoReq := &repositories.MoveCardPositionRequest{
 		CardID:      req.CardID,
-		NewPosition: int(req.NewPosition),
+		NewPosition: req.NewPosition,
 		BoardID:     boardID,
 		OldListID:   req.OldListID,
 		NewListID:   req.NewListID,
@@ -214,9 +182,9 @@ func (s *CardService) UpdateCardDescription(ctx context.Context, req *pb_card.Up
 	}
 
 	repoReq := &repositories.UpdateCardDescriptionRequest{
-		CardID:         req.CardID,
-		NewDescription: req.Description,
-		BoardID:        boardID,
+		CardID:      req.CardID,
+		Description: req.Description,
+		BoardID:     boardID,
 	}
 	err := s.cardRepo.UpdateCardDescription(repoReq)
 	if err != nil {

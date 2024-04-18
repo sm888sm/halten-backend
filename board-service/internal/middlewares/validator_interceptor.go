@@ -8,9 +8,18 @@ import (
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 )
 
-func ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+type ValidatorInterceptor struct {
+	db *gorm.DB
+}
+
+func NewValidatorInterceptor(db *gorm.DB) *ValidatorInterceptor {
+	return &ValidatorInterceptor{db: db}
+}
+
+func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	switch info.FullMethod {
 	// Board Service
 	case "/proto.BoardService/CreateBoard":
@@ -61,13 +70,6 @@ func validateCreateBoardRequest(req *pb.CreateBoardRequest) error {
 		})
 	}
 
-	if req.UserId == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
-			Message: "User ID cannot be zero",
-		})
-	}
-
 	if len(fieldErrors) > 0 {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
@@ -78,7 +80,7 @@ func validateCreateBoardRequest(req *pb.CreateBoardRequest) error {
 func validateGetBoardByIDRequest(req *pb.GetBoardByIDRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
+	if req.BoardID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
 			Field:   "id",
 			Message: "Board ID cannot be zero",
@@ -95,9 +97,9 @@ func validateGetBoardByIDRequest(req *pb.GetBoardByIDRequest) error {
 func validateGetBoardListRequest(req *pb.GetBoardListRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.UserId == 0 {
+	if req.UserID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
+			Field:   "userID",
 			Message: "User ID cannot be zero",
 		})
 	}
@@ -126,9 +128,9 @@ func validateGetBoardListRequest(req *pb.GetBoardListRequest) error {
 func validateGetBoardUsersRequest(req *pb.GetBoardUsersRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
+	if req.BoardID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardId",
+			Field:   "boardID",
 			Message: "Board ID cannot be zero",
 		})
 	}
@@ -143,9 +145,9 @@ func validateGetBoardUsersRequest(req *pb.GetBoardUsersRequest) error {
 func validateUpdateBoardRequest(req *pb.UpdateBoardRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
+	if req.BoardID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardId",
+			Field:   "boardID",
 			Message: "Board ID cannot be zero",
 		})
 	}
@@ -167,13 +169,6 @@ func validateUpdateBoardRequest(req *pb.UpdateBoardRequest) error {
 func validateDeleteBoardRequest(req *pb.DeleteBoardRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardId",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
 	if len(fieldErrors) > 0 {
 		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
 	}
@@ -184,30 +179,30 @@ func validateDeleteBoardRequest(req *pb.DeleteBoardRequest) error {
 func validateAddUsersRequest(req *pb.AddUsersRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
+	if req.BoardID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardId",
+			Field:   "boardID",
 			Message: "Board ID cannot be zero",
 		})
 	}
 
-	if len(req.UserIds) == 0 {
+	if len(req.UserIDs) == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
+			Field:   "userID",
 			Message: "User ID cannot be zero",
 		})
 	}
 
-	if len(req.UserIds) > 10 {
+	if len(req.UserIDs) > 10 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
+			Field:   "userID",
 			Message: "Cannot process more than 10 users at a time",
 		})
 	}
 
-	for _, userId := range req.UserIds {
-		if !isValidAccountNumber(userId) {
-			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
+	for _, userID := range req.UserIDs {
+		if !isValidAccountNumber(userID) {
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userID))
 		}
 	}
 
@@ -221,30 +216,30 @@ func validateAddUsersRequest(req *pb.AddUsersRequest) error {
 func validateRemoveUsersRequest(req *pb.RemoveUsersRequest) error {
 	var fieldErrors []errorhandler.FieldError
 
-	if req.Id == 0 {
+	if req.BoardID == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardId",
+			Field:   "boardID",
 			Message: "Board ID cannot be zero",
 		})
 	}
 
-	if len(req.UserIds) == 0 {
+	if len(req.UserIDs) == 0 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
+			Field:   "userID",
 			Message: "User ID cannot be zero",
 		})
 	}
 
-	if len(req.UserIds) > 10 {
+	if len(req.UserIDs) > 10 {
 		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userId",
+			Field:   "userID",
 			Message: "Cannot process more than 10 users at a time",
 		})
 	}
 
-	for _, userId := range req.UserIds {
-		if !isValidAccountNumber(userId) {
-			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userId))
+	for _, userID := range req.UserIDs {
+		if !isValidAccountNumber(userID) {
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, fmt.Sprintf("User ID %d is not a valid account number", userID))
 		}
 	}
 
@@ -255,7 +250,7 @@ func validateRemoveUsersRequest(req *pb.RemoveUsersRequest) error {
 	return nil
 }
 
-func isValidAccountNumber(userId uint64) bool {
+func isValidAccountNumber(userID uint64) bool {
 	// Check if the user ID is a positive number
-	return userId > 0
+	return userID > 0
 }

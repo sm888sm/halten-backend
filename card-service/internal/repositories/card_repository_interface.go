@@ -20,7 +20,7 @@ type GetCardByIDRequest struct {
 }
 
 type GetCardByIDResponse struct {
-	Card *models.Card
+	Card *internal_models.CardDTO
 }
 
 type GetCardsByListRequest struct {
@@ -28,7 +28,7 @@ type GetCardsByListRequest struct {
 }
 
 type GetCardsByListResponse struct {
-	Cards []*internal_models.CardMeta
+	Cards []*internal_models.CardMetaDTO
 }
 
 type GetCardsByBoardRequest struct {
@@ -36,7 +36,7 @@ type GetCardsByBoardRequest struct {
 }
 
 type GetCardsByBoardResponse struct {
-	Cards []*internal_models.CardMeta
+	Cards []*internal_models.CardMetaDTO
 }
 
 type DeleteCardRequest struct {
@@ -46,7 +46,7 @@ type DeleteCardRequest struct {
 
 type MoveCardPositionRequest struct {
 	CardID      uint64
-	NewPosition int
+	NewPosition int64
 	BoardID     uint64
 	OldListID   uint64
 	NewListID   uint64
@@ -59,9 +59,9 @@ type UpdateCardNameRequest struct {
 }
 
 type UpdateCardDescriptionRequest struct {
-	CardID         uint64
-	NewDescription string
-	BoardID        uint64
+	CardID      uint64
+	Description string
+	BoardID     uint64
 }
 
 type AddCardLabelRequest struct {

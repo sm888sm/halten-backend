@@ -1,13 +1,9 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type ActivityLog struct {
-	gorm.Model
-	BoardID       uint
-	UserID        uint
+	BaseModel
+	BoardID       uint64
+	UserID        uint64
 	ActionType    string `gorm:"type:varchar(50)"`
 	Details       string `gorm:"type:text"`
 	Notifications []Notification

@@ -1,13 +1,9 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Comment struct {
-	gorm.Model
-	CardID  uint
-	UserID  uint
+	BaseModel
+	CardID  uint64
+	UserID  uint64
 	Content string `gorm:"type:varchar(1024)"`
 	User    User   `gorm:"foreignKey:UserID"`
 }

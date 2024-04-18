@@ -2,14 +2,12 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	BaseModel
 	Username       string `gorm:"unique"`
-	FullName       string
+	Fullname       string `gorm:"not null"`
 	Email          string `gorm:"unique"`
 	NewEmail       string
 	Password       string    `json:"-"`

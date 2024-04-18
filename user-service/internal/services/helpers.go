@@ -11,7 +11,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func (s *AuthService) generateToken(userID uint, duration time.Duration) (string, error) {
+func (s *AuthService) generateToken(userID uint64, duration time.Duration) (string, error) {
 	// Generate a JWT with the specified duration and the user's username as a claim...
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": userID,

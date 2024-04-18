@@ -220,7 +220,7 @@ func (r *GormUserRepository) ConfirmNewEmail(req *ConfirmNewEmailRequest) error 
 }
 
 func (r *GormUserRepository) CheckBoardUserRole(req *CheckBoardUserRoleRequest) error {
-	var permission models.Permission
+	var permission models.BoardMember
 	if err := r.db.Select("role").Where("board_id = ? AND user_id = ?", req.BoardID, req.UserID).First(&permission).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")

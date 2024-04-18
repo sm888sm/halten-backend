@@ -20,7 +20,7 @@ func (r *GormCardRepository) checkLabelExistsAndBelongsToBoard(tx *gorm.DB, labe
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	if existingLabel.BoardID != uint(boardID) {
+	if existingLabel.BoardID != boardID {
 		return nil, errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Label does not belong to the board")
 	}
 
@@ -28,7 +28,7 @@ func (r *GormCardRepository) checkLabelExistsAndBelongsToBoard(tx *gorm.DB, labe
 }
 
 func (r *GormCardRepository) checkCardExistsAndBelongsToBoard(tx *gorm.DB, cardID uint64, boardID uint64) (*models.Card, error) {
-	card := &models.Card{Model: gorm.Model{ID: uint(cardID)}, BoardID: uint(boardID)}
+	card := &models.Card{BaseModel: models.BaseModel{ID: cardID}, BoardID: boardID}
 	if err := tx.First(card).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Card not found")

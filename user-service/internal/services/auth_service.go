@@ -60,7 +60,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, req *pb_auth.RefreshToke
 	}
 
 	// Generate a new access token...
-	accessToken, err := s.generateToken((*claims)["userID"].(uint), 15*time.Minute)
+	accessToken, err := s.generateToken((*claims)["userID"].(uint64), 15*time.Minute)
 	if err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}

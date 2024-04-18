@@ -2,18 +2,14 @@ package repositories
 
 import (
 	"errors"
-	"math"
 
-	internal_models "github.com/sm888sm/halten-backend/board-service/internal/models"
+	dtos "github.com/sm888sm/halten-backend/board-service/internal/models"
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/models"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type GormBoardRepository struct {
@@ -24,21 +20,23 @@ func NewBoardRepository(db *gorm.DB) *GormBoardRepository {
 	return &GormBoardRepository{db: db}
 }
 
-func (r *GormBoardRepository) CreateBoard(board *models.Board, userID uint) (*models.Board, error) {
-	board.UserID = userID
-
+func (r *GormBoardRepository) CreateBoard(req *CreateBoardRequest) (*CreateBoardResponse, error) {
+	board := *req.Board
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(board).Error; err != nil {
+
+		if err := tx.Create(&board).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		permission := models.Permission{
-			UserID:  userID,
+		// TODO : Create list & card
+
+		boardMember := models.BoardMember{
+			UserID:  req.Board.UserID,
 			BoardID: board.ID,
 			Role:    roles.OwnerRole,
 		}
 
-		if err := tx.Create(&permission).Error; err != nil {
+		if err := tx.Create(&boardMember).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
@@ -49,32 +47,60 @@ func (r *GormBoardRepository) CreateBoard(board *models.Board, userID uint) (*mo
 		return nil, err
 	}
 
-	return board, nil
+	return &CreateBoardResponse{Board: &board}, nil
 }
 
-func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board, error) {
+func (r *GormBoardRepository) GetBoardByID(req *GetBoardByIDRequest) (*GetBoardByIDResponse, error) {
 	var board models.Board
-	var permission models.Permission
+	var boardDTO dtos.BoardDTO
 
-	// TODO exclude list and card
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.
-			Preload("Labels").
-			First(&board, id).Error; err != nil {
+			Select("ID", "Name", "Visibility", "IsArchived").
+			Preload("Labels", func(db *gorm.DB) *gorm.DB {
+				return db.Select("ID", "Name", "Color")
+			}).
+			Preload("Members", func(db *gorm.DB) *gorm.DB {
+				return db.Select("ID", "Role")
+			}).
+			First(&board, req.BoardID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		if board.Visibility == "private" {
-			if err := tx.Where("board_id = ? AND user_id = ?", id, userID).First(&permission).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return errorhandler.NewAPIError(httpcodes.ErrForbidden, "You do not have permission to access this board")
-				}
+		// Map the board to the BoardDTO struct
+		boardDTO.ID = board.ID
+		boardDTO.Name = board.Name
+		boardDTO.Visibility = board.Visibility
+		boardDTO.IsArchived = board.IsArchived
+
+		// Map the labels
+		for _, label := range board.Labels {
+			boardDTO.Labels = append(boardDTO.Labels, &dtos.LabelDTO{
+				Id:    label.ID,
+				Name:  label.Name,
+				Color: label.Color,
+			})
+		}
+
+		// Map the members
+		for _, member := range board.Members {
+			var user models.User
+			if err := tx.First(&user, member.UserID).Error; err != nil {
 				return errorhandler.NewGrpcInternalError()
 			}
+
+			boardDTO.Members = append(boardDTO.Members, &dtos.MemberDTO{
+				ID:       user.ID,
+				Username: user.Username,
+				Fullname: user.Fullname,
+				Role:     member.Role,
+			})
 		}
+
+		// TODO: Map the lists and cards
 
 		return nil
 	})
@@ -83,25 +109,40 @@ func (r *GormBoardRepository) GetBoardByID(id uint, userID uint) (*models.Board,
 		return nil, err
 	}
 
-	return &board, nil
+	return &GetBoardByIDResponse{Board: &board}, nil
 }
 
-func (r *GormBoardRepository) GetBoardList(pageNumber, pageSize int, userID uint) (*internal_models.BoardList, error) {
-	var boards []models.Board
+func (r *GormBoardRepository) GetBoardList(req *GetBoardListRequest) (*GetBoardListResponse, error) {
+	pageNumber, pageSize := int(req.PageNumber), int(req.PageSize)
+	var boards []*models.Board
+	var boardMetaDTOs []*dtos.BoardMetaDTO
 	var totalItems int64
+
 	offset := (pageNumber - 1) * pageSize
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Select("boards.id, boards.created_at, boards.updated_at, boards.name, boards.visibility").
-			Joins("JOIN permissions ON permissions.board_id = boards.id").
-			Where("permissions.user_id = ? boards.is_archived = ?", userID, false).
+			Joins("JOIN board_members ON board_members.board_id = boards.id").
+			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, false).
 			Offset(offset).Limit(pageSize).
 			Find(&boards).Error; err != nil {
 			return err
 		}
 
-		tx.Model(&models.Board{}).Joins("JOIN permissions ON permissions.board_id = boards.id").
-			Where("permissions.user_id = ?", userID).
+		// Map the boards to the BoardMetaDTO struct
+		for _, board := range boards {
+			boardMetaDTOs = append(boardMetaDTOs, &dtos.BoardMetaDTO{
+				ID:         board.ID,
+				Name:       board.Name,
+				Visibility: board.Visibility,
+				IsArchived: board.IsArchived,
+			})
+		}
+
+		// Count the total items
+		tx.Model(&models.Board{}).
+			Joins("JOIN board_members ON board_members.board_id = boards.id").
+			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, false).
 			Count(&totalItems)
 
 		return nil
@@ -111,343 +152,57 @@ func (r *GormBoardRepository) GetBoardList(pageNumber, pageSize int, userID uint
 		return nil, err
 	}
 
-	totalPages := int(math.Ceil(float64(totalItems) / float64(pageSize)))
-	hasMore := pageNumber < totalPages
+	// Calculate the pagination data
+	pagination := &dtos.Pagination{
+		CurrentPage:  req.PageNumber,
+		TotalPages:   (uint64(totalItems) + req.PageSize - 1) / req.PageSize,
+		ItemsPerPage: req.PageSize,
+		TotalItems:   uint64(totalItems),
+		HasMore:      req.PageNumber*req.PageSize < uint64(totalItems),
+	}
 
-	return &internal_models.BoardList{
-		Pagination: internal_models.Pagination{
-			CurrentPage:  uint64(pageNumber),
-			TotalPages:   uint64(totalPages),
-			ItemsPerPage: uint64(pageSize),
-			TotalItems:   uint64(totalItems),
-			HasMore:      hasMore,
-		},
-		Boards: boards,
+	return &GetBoardListResponse{
+		Boards:     boardMetaDTOs,
+		Pagination: pagination,
 	}, nil
 }
 
-func (r *GormBoardRepository) GetBoardPermissionByCard(params GetBoardPermissionByCardParams) (*GetBoardPermissionByCardResult, error) {
-	var card models.Card
-	var board models.Board
-	var permission models.Permission
-
-	// Find the card
-	if err := r.db.First(&card, params.CardID).Error; err != nil {
-		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Permission not found").Error())
-	}
-
-	// Find the board by card
-	if err := r.db.First(&board, card.BoardID).Error; err != nil {
-		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "BPermission not found").Error())
-	}
-
-	// Find the permission by board, regardless of permission, return it and the board visibility
-	if err := r.db.Where("board_id = ? AND user_id = ?", board.ID, params.UserID).First(&permission).Error; err != nil {
-		// If permission not found, return nil permission but still return board ID and visibility
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &GetBoardPermissionByCardResult{
-				BoardID:    board.ID,
-				Visibility: board.Visibility,
-				Permission: nil,
-			}, nil
-		}
-		// If other error, return the error
-		return nil, errorhandler.NewGrpcInternalError()
-	}
-
-	return &GetBoardPermissionByCardResult{
-		BoardID:    board.ID,
-		Visibility: board.Visibility,
-		Permission: &permission,
-	}, nil
-}
-
-func (r *GormBoardRepository) GetBoardPermissionByList(params GetBoardPermissionByListParams) (*GetBoardPermissionByListResult, error) {
-	var list models.List
-	var board models.Board
-	var permission models.Permission
-
-	// Find the list
-	if err := r.db.First(&list, params.ListID).Error; err != nil {
-		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
-	}
-
-	// Find the board by list
-	if err := r.db.First(&board, list.BoardID).Error; err != nil {
-		return nil, status.Errorf(codes.Internal, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
-	}
-
-	// Find the permission by board, regardless of permission, return it and the board visibility
-	if err := r.db.Where("board_id = ? AND user_id = ?", board.ID, params.UserID).First(&permission).Error; err != nil {
-		// If permission not found, return nil permission but still return board ID and visibility
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &GetBoardPermissionByListResult{
-				BoardID:    board.ID,
-				Visibility: board.Visibility,
-				Permission: nil,
-			}, nil
-		}
-		// If other error, return the error
-		return nil, errorhandler.NewGrpcInternalError()
-	}
-
-	return &GetBoardPermissionByListResult{
-		BoardID:    board.ID,
-		Visibility: board.Visibility,
-		Permission: &permission,
-	}, nil
-}
-
-func (r *GormBoardRepository) UpdateBoard(userID uint, id uint, name string) error {
-	var board models.Board
-	var permission models.Permission
-
+func (r *GormBoardRepository) UpdateBoardName(req *UpdateBoardNameRequest) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&board, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
-			}
+		result := tx.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("name", req.Name)
+		if result.Error != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
-
-		if err := tx.Where("board_id = ? AND user_id = ?", id, userID).First(&permission).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
+		if result.RowsAffected == 0 {
+			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
 		}
-
-		if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can update the board")
-		}
-
-		board.Name = name
-		if err := tx.Save(&board).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
 		return nil
 	})
 }
 
-func (r *GormBoardRepository) DeleteBoard(userID uint, id uint) error {
-	var board models.Board
+func (r *GormBoardRepository) GetBoardMembers(req *GetBoardMembersRequest) (*GetBoardMembersResponse, error) {
+	var boardMemberDTOs []*dtos.MemberDTO
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&board, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
-			}
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var boardMembers []models.BoardMember
+
+		if err := tx.Where("board_id = ?", req.BoardID).Find(&boardMembers).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		if board.UserID != userID {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner can delete the board")
-		}
-
-		if err := tx.Delete(&board).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		return nil
-	})
-}
-
-func (r *GormBoardRepository) GetBoardUsers(boardID uint) ([]models.User, error) {
-
-	var permissions []models.Permission
-	if err := r.db.Where("board_id = ?", boardID).Find(&permissions).Error; err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
-	}
-
-	var users []models.User
-	for _, permission := range permissions {
-		var user models.User
-		if err := r.db.First(&user, permission.UserID).Error; err != nil {
-			return nil, errorhandler.NewGrpcInternalError()
-		}
-		users = append(users, user)
-	}
-
-	return users, nil
-}
-
-func (r *GormBoardRepository) AddBoardUsers(userID uint, boardID uint, userIDs []uint, role string) error {
-	// Check if the current user has permission to add users
-	var permission models.Permission
-	if err := r.db.Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
-		return errorhandler.NewGrpcInternalError()
-	}
-
-	if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can add users to the board")
-	}
-	existingUsersCount := 0
-	for _, userID := range userIDs {
-		// Check if the user already exists
-		var existingPermission models.Permission
-		if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("board_id = ? AND user_id = ?", boardID, userID).First(&existingPermission).Error; err != nil {
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				existingUsersCount++
-				continue
-			}
-		} else {
-			continue
-		}
-
-		permission := models.Permission{
-			UserID:  userID,
-			BoardID: boardID,
-			Role:    role,
-		}
-
-		err := r.db.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Create(&permission).Error; err != nil {
+		for _, boardMember := range boardMembers {
+			var user models.User
+			if err := tx.First(&user, boardMember.UserID).Error; err != nil {
 				return errorhandler.NewGrpcInternalError()
 			}
 
-			return nil
-		})
-
-		if err != nil {
-			return err
+			boardMemberDTOs = append(boardMemberDTOs, &dtos.MemberDTO{
+				ID:       user.ID,
+				Username: user.Username,
+				Role:     boardMember.Role,
+				Fullname: user.Fullname,
+			})
 		}
-	}
-
-	if existingUsersCount == len(userIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrConflict, "All users are already on the board")
-	}
-
-	return nil
-}
-
-func (r *GormBoardRepository) RemoveBoardUsers(userID uint, boardID uint, userIDs []uint) error {
-	// Check if the current user has permission to remove users
-	var permission models.Permission
-	if err := r.db.Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
-		return errorhandler.NewGrpcInternalError()
-	}
-
-	if permission.Role != roles.AdminRole && permission.Role != roles.OwnerRole {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner and admin can remove users from the board")
-	}
-
-	nonExistingUsersCount := 0
-	for _, userID := range userIDs {
-		err := r.db.Transaction(func(tx *gorm.DB) error {
-			// Check if the user is on the permission list
-			var permission models.Permission
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					nonExistingUsersCount++
-					return nil
-				}
-				return errorhandler.NewGrpcInternalError()
-			}
-
-			// If the user is on the permission list, proceed to delete
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Delete(&permission).Error; err != nil {
-				return errorhandler.NewGrpcInternalError()
-			}
-
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	if nonExistingUsersCount == len(userIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "None of the users are on the board")
-	}
-
-	return nil
-}
-
-func (r *GormBoardRepository) AssignBoardUserRole(userID uint, boardID uint, AssignUserId uint, role string) error {
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, userID).Update("role", role).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		return nil
-	})
-
-	return err
-}
-
-func (r *GormBoardRepository) ChangeBoardOwner(boardID uint, currentOwnerID uint, newOwnerID uint) error {
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var newOwnerPermission models.Permission
-		if err := tx.Where("board_id = ? AND user_id = ?", boardID, newOwnerID).First(&newOwnerPermission).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "New owner must be a member of the board")
-			}
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		var board models.Board
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&board, boardID).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		if board.UserID != currentOwnerID {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Only the owner can change the owner of the board")
-		}
-
-		board.UserID = newOwnerID
-		if err := tx.Save(&board).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		if err := tx.Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, currentOwnerID).Update("role", "member").Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		if err := tx.Model(&models.Permission{}).Where("board_id = ? AND user_id = ?", boardID, newOwnerID).Update("role", roles.OwnerRole).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
-		}
-
-		return nil
-	})
-
-	return err
-}
-
-func (r *GormBoardRepository) ArchiveBoard(userID, boardID uint) error {
-	board := &models.Board{}
-	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
-	if err != nil {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
-	}
-	board.IsArchived = true
-	return r.db.Save(board).Error
-}
-
-func (r *GormBoardRepository) RestoreBoard(userID, boardID uint) error {
-	board := &models.Board{}
-	err := r.db.Where("id = ? AND user_id = ?", boardID, userID).First(board).Error
-	if err != nil {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
-	}
-	board.IsArchived = false
-	return r.db.Save(board).Error
-}
-
-func (r *GormBoardRepository) GetArchivedBoardList(userID uint, pageNumber, pageSize int) (*internal_models.BoardList, error) {
-	var boards []models.Board
-	var totalItems int64
-	offset := (pageNumber - 1) * pageSize
-
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Select("boards.id, boards.created_at, boards.updated_at, boards.name, boards.visibility").
-			Joins("JOIN permissions ON permissions.board_id = boards.id").
-			Where("permissions.user_id = ? AND boards.is_archived = ? AND boards.user_id = ?", userID, true, userID).
-			Offset(offset).Limit(pageSize).
-			Find(&boards).Error; err != nil {
-			return err
-		}
-
-		tx.Model(&models.Board{}).Joins("JOIN permissions ON permissions.board_id = boards.id").
-			Where("permissions.user_id = ? AND boards.is_archived = ? AND boards.user_id = ?", userID, true, userID).Count(&totalItems)
 
 		return nil
 	})
@@ -456,17 +211,239 @@ func (r *GormBoardRepository) GetArchivedBoardList(userID uint, pageNumber, page
 		return nil, err
 	}
 
-	totalPages := int(math.Ceil(float64(totalItems) / float64(pageSize)))
-	hasMore := pageNumber < totalPages
-
-	return &internal_models.BoardList{
-		Pagination: internal_models.Pagination{
-			CurrentPage:  uint64(pageNumber),
-			TotalPages:   uint64(totalPages),
-			ItemsPerPage: uint64(pageSize),
-			TotalItems:   uint64(totalItems),
-			HasMore:      hasMore,
-		},
-		Boards: boards,
+	return &GetBoardMembersResponse{
+		Members: boardMemberDTOs,
 	}, nil
+}
+
+func (r *GormBoardRepository) AddBoardUsers(req *AddBoardUsersRequest) error {
+	// Validate all users before starting the transaction
+	var existingUserIDs []uint
+	if err := r.db.Model(&models.User{}).Where("id IN ?", req.UserIDs).Select("id").Find(&existingUserIDs).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	if len(existingUserIDs) != len(req.UserIDs) {
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found")
+	}
+
+	// Check if any user is already a member of the board
+	var existingBoardMemberIDs []uint
+	if err := r.db.Model(&models.BoardMember{}).Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Select("id").Find(&existingBoardMemberIDs).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	if len(existingBoardMemberIDs) > 0 {
+		return errorhandler.NewAPIError(httpcodes.ErrConflict, "One or more users are already members of the board")
+	}
+
+	// Start the transaction
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, userID := range req.UserIDs {
+			boardMember := models.BoardMember{
+				UserID:  userID,
+				BoardID: req.BoardID,
+				Role:    req.Role,
+			}
+
+			// Add the user to the board
+			if err := tx.Create(&boardMember).Error; err != nil {
+				return errorhandler.NewGrpcInternalError()
+			}
+		}
+
+		return nil
+	})
+}
+
+func (r *GormBoardRepository) RemoveBoardUsers(req *RemoveBoardUsersRequest) error {
+	// Check if all users exist
+	var existingUserIDs []uint
+	if err := r.db.Model(&models.User{}).Where("id IN ?", req.UserIDs).Select("id").Find(&existingUserIDs).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	if len(existingUserIDs) != len(req.UserIDs) {
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found")
+	}
+
+	// Check if all users are members of the board
+	var existingBoardMemberIDs []uint
+	if err := r.db.Model(&models.BoardMember{}).Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Select("id").Find(&existingBoardMemberIDs).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	if len(existingBoardMemberIDs) != len(req.UserIDs) {
+		return errorhandler.NewAPIError(httpcodes.ErrConflict, "One or more users are not members of the board")
+	}
+
+	// Start the transaction
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Delete(&models.BoardMember{}).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		return nil
+	})
+}
+
+func (r *GormBoardRepository) AssignBoardUserRole(req *AssignBoardUserRoleRequest) error {
+	// Check if all users exist and are members of the board
+	var existingBoardMemberIDs []uint
+	if err := r.db.Model(&models.BoardMember{}).Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Select("id").Find(&existingBoardMemberIDs).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	if len(existingBoardMemberIDs) != len(req.UserIDs) {
+		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found or not members of the board")
+	}
+
+	// Check if the current user has permission to assign roles
+	var currentUserRole models.BoardMember
+	if err := r.db.Where("board_id = ? AND user_id = ?", req.BoardID, req.UserID).Select("role").First(&currentUserRole).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	// Check if the current user can assign the requested role
+	if !canAssignRole(currentUserRole.Role, req.Role) {
+		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "You don't have permission to assign this role")
+	}
+
+	// Start the transaction
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.BoardMember{}).Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Update("role", req.Role).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		return nil
+	})
+}
+
+func (r *GormBoardRepository) ChangeBoardOwner(req *ChangeBoardOwnerRequest) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Check if the new owner exists
+		var newUser models.User
+		if err := tx.First(&newUser, req.NewOwnerID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found")
+			}
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Check if the new owner is already a member of the board
+		var newOwnerMember models.BoardMember
+		if err := tx.Where("board_id = ? AND user_id = ?", req.BoardID, req.NewOwnerID).First(&newOwnerMember).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrForbidden, "User is not a member of the board")
+			}
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Check if the current user is the owner of the board
+		var currentOwnerMember models.BoardMember
+		if err := tx.Where("board_id = ? AND user_id = ? AND role = ?", req.BoardID, req.CurrentOwnerID, roles.OwnerRole).First(&currentOwnerMember).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Current user is not the owner of the board")
+			}
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Update the role of the current owner to 'member'
+		if err := tx.Model(&currentOwnerMember).Update("role", roles.MemberRole).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Update the role of the new owner to 'owner'
+		if err := tx.Model(&newOwnerMember).Update("role", roles.OwnerRole).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		return nil
+	})
+}
+
+func (r *GormBoardRepository) ArchiveBoard(req *ArchiveBoardRequest) error {
+	// Update the 'archived' field of the board to true
+	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", true).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	return nil
+}
+
+func (r *GormBoardRepository) RestoreBoard(req *RestoreBoardRequest) error {
+	// Update the 'archived' field of the board to false
+	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", false).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	return nil
+}
+
+func (r *GormBoardRepository) GetArchivedBoardList(req *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error) {
+	pageNumber, pageSize := int(req.PageNumber), int(req.PageSize)
+	var boards []*models.Board
+	var boardMetaDTOs []*dtos.BoardMetaDTO
+	var totalItems int64
+
+	offset := (pageNumber - 1) * pageSize
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Select("boards.id, boards.created_at, boards.updated_at, boards.name, boards.visibility").
+			Joins("JOIN board_members ON board_members.board_id = boards.id").
+			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, true).
+			Offset(offset).Limit(pageSize).
+			Find(&boards).Error; err != nil {
+			return err
+		}
+
+		// Map the boards to the BoardMetaDTO struct
+		for _, board := range boards {
+			boardMetaDTOs = append(boardMetaDTOs, &dtos.BoardMetaDTO{
+				ID:         board.ID,
+				Name:       board.Name,
+				Visibility: board.Visibility,
+				IsArchived: board.IsArchived,
+			})
+		}
+
+		// Count the total items
+		tx.Model(&models.Board{}).
+			Joins("JOIN board_members ON board_members.board_id = boards.id").
+			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, false).
+			Count(&totalItems)
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate the pagination data
+	pagination := dtos.Pagination{
+		CurrentPage:  req.PageNumber,
+		TotalPages:   (uint64(totalItems) + req.PageSize - 1) / req.PageSize,
+		ItemsPerPage: req.PageSize,
+		TotalItems:   uint64(totalItems),
+		HasMore:      req.PageNumber*req.PageSize < uint64(totalItems),
+	}
+
+	return &GetArchivedBoardListResponse{
+		Boards:     boardMetaDTOs,
+		Pagination: &pagination,
+	}, nil
+}
+
+func (r *GormBoardRepository) DeleteBoard(req *DeleteBoardRequest) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("id = ? AND is_archived = ?", req.BoardID, true).Delete(&models.Board{})
+		if result.Error != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+		if result.RowsAffected == 0 {
+			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found or not archived")
+		}
+		return nil
+	})
 }

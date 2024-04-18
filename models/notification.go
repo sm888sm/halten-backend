@@ -1,12 +1,8 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Notification struct {
-	gorm.Model
-	ActivityLogID uint
-	UserID        uint
+	BaseModel
+	ActivityLogID uint64
+	UserID        uint64
 	IsRead        bool
 }
