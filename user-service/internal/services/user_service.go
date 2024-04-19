@@ -32,6 +32,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *pb_user.CreateUserReq
 		Username: req.Username,
 		Email:    req.Email,
 		Password: string(hashedPassword),
+		Fullname: req.Fullname,
 		// Add other fields as necessary
 	}
 
@@ -52,14 +53,14 @@ func (s *UserService) GetUserByID(ctx context.Context, req *pb_user.GetUserByIDR
 	if err != nil {
 		return nil, err
 	}
-	pbUser := &pb_user.User{
+	user := &pb_user.User{
 		UserID:   uint64(repoRes.User.ID),
 		Username: repoRes.User.Username,
 		Email:    repoRes.User.Email,
 		// Add other fields as necessary
 	}
 
-	return &pb_user.GetUserByIDResponse{User: pbUser}, nil
+	return &pb_user.GetUserByIDResponse{User: user}, nil
 }
 
 func (s *UserService) GetUserByUsername(ctx context.Context, req *pb_user.GetUserByUsernameRequest) (*pb_user.GetUserByUsernameResponse, error) {
@@ -70,13 +71,13 @@ func (s *UserService) GetUserByUsername(ctx context.Context, req *pb_user.GetUse
 	if err != nil {
 		return nil, err
 	}
-	pbUser := &pb_user.User{
+	user := &pb_user.User{
 		UserID:   uint64(repoRes.User.ID),
 		Username: repoRes.User.Username,
 		Email:    repoRes.User.Email,
 		// Add other fields as necessary
 	}
-	return &pb_user.GetUserByUsernameResponse{User: pbUser}, nil
+	return &pb_user.GetUserByUsernameResponse{User: user}, nil
 }
 
 func (s *UserService) UpdateEmail(ctx context.Context, req *pb_user.UpdateEmailRequest) (*pb_user.UpdateEmailResponse, error) {

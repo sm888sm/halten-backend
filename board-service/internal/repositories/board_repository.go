@@ -28,7 +28,7 @@ func (r *GormBoardRepository) CreateBoard(req *CreateBoardRequest) (*CreateBoard
 			return errorhandler.NewGrpcInternalError()
 		}
 
-		// TODO : Create list & card
+		// TODO : Create list, card and label
 
 		boardMember := models.BoardMember{
 			UserID:  req.Board.UserID,

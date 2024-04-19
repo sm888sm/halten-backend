@@ -103,6 +103,9 @@ type BoardRepository interface {
 	RemoveBoardUsers(req *RemoveBoardUsersRequest) error
 	AssignBoardUserRole(req *AssignBoardUserRoleRequest) error
 	ChangeBoardOwner(req *ChangeBoardOwnerRequest) error
+	// Change board visibility
+	// Add label
+	// Remove label
 	GetArchivedBoardList(req *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error)
 	RestoreBoard(req *RestoreBoardRequest) error
 	ArchiveBoard(req *ArchiveBoardRequest) error

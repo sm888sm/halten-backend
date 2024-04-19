@@ -13,17 +13,17 @@ import (
 	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
 
 	pbBoard "github.com/sm888sm/halten-backend/board-service/api/pb"
-	pbCard "github.com/sm888sm/halten-backend/card-service/api/pb"
-	pbList "github.com/sm888sm/halten-backend/list-service/api/pb"
-	pbUser "github.com/sm888sm/halten-backend/user-service/api/pb"
+	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
+	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
+	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
 
 type Services struct {
-	userClient  pbUser.UserServiceClient
-	authClient  pbUser.AuthServiceClient
+	userClient  pb_user.UserServiceClient
+	authClient  pb_user.AuthServiceClient
 	boardClient pbBoard.BoardServiceClient
-	listClient  pbList.ListServiceClient
-	cardClient  pbCard.CardServiceClient
+	listClient  pb_list.ListServiceClient
+	cardClient  pb_card.CardServiceClient
 
 	userConn  *grpc.ClientConn
 	authConn  *grpc.ClientConn
@@ -86,13 +86,13 @@ func GetServices(cfg *config.ServiceConfig) *Services {
 		go connect(cfg.UserServiceAddr, func(conn *grpc.ClientConn) {
 			services.userConn = conn
 		}, func(client interface{}) {
-			services.userClient = client.(pbUser.UserServiceClient)
+			services.userClient = client.(pb_user.UserServiceClient)
 		})
 
 		go connect(cfg.UserServiceAddr, func(conn *grpc.ClientConn) {
 			services.authConn = conn
 		}, func(client interface{}) {
-			services.authClient = client.(pbUser.AuthServiceClient)
+			services.authClient = client.(pb_user.AuthServiceClient)
 		})
 
 		go connect(cfg.BoardServiceAddr, func(conn *grpc.ClientConn) {
@@ -104,34 +104,34 @@ func GetServices(cfg *config.ServiceConfig) *Services {
 		go connect(cfg.ListServiceAddr, func(conn *grpc.ClientConn) {
 			services.listConn = conn
 		}, func(client interface{}) {
-			services.listClient = client.(pbList.ListServiceClient)
+			services.listClient = client.(pb_list.ListServiceClient)
 		})
 
 		go connect(cfg.CardServiceAddr, func(conn *grpc.ClientConn) {
 			services.cardConn = conn
 		}, func(client interface{}) {
-			services.cardClient = client.(pbCard.CardServiceClient)
+			services.cardClient = client.(pb_card.CardServiceClient)
 		})
 	})
 
 	return services
 }
 
-func (s *Services) GetUserClient() (pbUser.UserServiceClient, error) {
+func (s *Services) GetUserClient() (pb_user.UserServiceClient, error) {
 	if s.userConn.GetState() != connectivity.Ready {
 		return nil, errors.New("user service not available")
 	}
 	return s.userClient, nil
 }
 
-func (s *Services) GetAuthClient() (pbUser.AuthServiceClient, error) {
+func (s *Services) GetAuthClient() (pb_user.AuthServiceClient, error) {
 	if s.authConn.GetState() != connectivity.Ready {
 		return nil, errors.New("auth service not available")
 	}
 	return s.authClient, nil
 }
 
-func (s *Services) GetListClient() (pbList.ListServiceClient, error) {
+func (s *Services) GetListClient() (pb_list.ListServiceClient, error) {
 	if s.listConn.GetState() != connectivity.Ready {
 		return nil, errors.New("list service not available")
 	}
@@ -145,7 +145,7 @@ func (s *Services) GetBoardClient() (pbBoard.BoardServiceClient, error) {
 	return s.boardClient, nil
 }
 
-func (s *Services) GetCardClient() (pbCard.CardServiceClient, error) {
+func (s *Services) GetCardClient() (pb_card.CardServiceClient, error) {
 	if s.cardConn.GetState() != connectivity.Ready {
 		return nil, errors.New("card service not available")
 	}

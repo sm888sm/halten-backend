@@ -39,9 +39,9 @@ func (s *ListService) GetListsByBoard(ctx context.Context, req *pb.GetListsByBoa
 	if err != nil {
 		return nil, err
 	}
-	var pbLists []*pb.List
+	var pb_lists []*pb.List
 	for _, l := range lists {
-		pbLists = append(pbLists, &pb.List{
+		pb_lists = append(pb_lists, &pb.List{
 			Id:       uint64(l.ID),
 			BoardId:  uint64(l.BoardID),
 			Name:     l.Name,
@@ -49,7 +49,7 @@ func (s *ListService) GetListsByBoard(ctx context.Context, req *pb.GetListsByBoa
 		})
 	}
 	return &pb.GetListsByBoardResponse{
-		Lists: pbLists,
+		Lists: pb_lists,
 	}, nil
 }
 
