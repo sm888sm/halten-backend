@@ -80,16 +80,10 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 			return nil, err
 		}
 
-		cardID, err := helpers.ExtractCardIDFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		// Insert userID, boardID and cardID to context
 
 		ctx = context.WithValue(ctx, contextkeys.UserIDKey{}, userID)
 		ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
-		ctx = context.WithValue(ctx, contextkeys.CardIDKey{}, cardID)
 
 		if _, err := authService.CheckBoardUserRole(ctx, &pb_auth.CheckBoardUserRoleRequest{
 			UserID:       userID,
