@@ -84,3 +84,12 @@ func ExtractCardIDFromContext(ctx context.Context) (uint64, error) {
 
 	return cardID, nil
 }
+
+func Contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

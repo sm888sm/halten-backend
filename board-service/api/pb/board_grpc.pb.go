@@ -24,17 +24,20 @@ const _ = grpc.SupportPackageIsVersion7
 type BoardServiceClient interface {
 	CreateBoard(ctx context.Context, in *CreateBoardRequest, opts ...grpc.CallOption) (*CreateBoardResponse, error)
 	GetBoardByID(ctx context.Context, in *GetBoardByIDRequest, opts ...grpc.CallOption) (*GetBoardByIDResponse, error)
-	GetBoardUsers(ctx context.Context, in *GetBoardUsersRequest, opts ...grpc.CallOption) (*GetBoardUsersResponse, error)
 	GetBoardList(ctx context.Context, in *GetBoardListRequest, opts ...grpc.CallOption) (*GetBoardListResponse, error)
-	UpdateBoard(ctx context.Context, in *UpdateBoardRequest, opts ...grpc.CallOption) (*UpdateBoardResponse, error)
-	DeleteBoard(ctx context.Context, in *DeleteBoardRequest, opts ...grpc.CallOption) (*DeleteBoardResponse, error)
-	AddBoardUser(ctx context.Context, in *AddUsersRequest, opts ...grpc.CallOption) (*AddUsersResponse, error)
-	RemoveBoardUser(ctx context.Context, in *RemoveUsersRequest, opts ...grpc.CallOption) (*RemoveUsersResponse, error)
-	AssignBoardUserRole(ctx context.Context, in *AssignUserRoleRequest, opts ...grpc.CallOption) (*AssignUserRoleResponse, error)
+	GetBoardMembers(ctx context.Context, in *GetBoardMembersRequest, opts ...grpc.CallOption) (*GetBoardMembersResponse, error)
+	UpdateBoardName(ctx context.Context, in *UpdateBoardNameRequest, opts ...grpc.CallOption) (*UpdateBoardNameResponse, error)
+	AddBoardUsers(ctx context.Context, in *AddBoardUsersRequest, opts ...grpc.CallOption) (*AddBoardUsersResponse, error)
+	RemoveBoardUsers(ctx context.Context, in *RemoveBoardUsersRequest, opts ...grpc.CallOption) (*RemoveBoardUsersResponse, error)
+	AssignBoardUserRole(ctx context.Context, in *AssignBoardUserRoleRequest, opts ...grpc.CallOption) (*AssignBoardUserRoleResponse, error)
 	ChangeBoardOwner(ctx context.Context, in *ChangeBoardOwnerRequest, opts ...grpc.CallOption) (*ChangeBoardOwnerResponse, error)
-	GetAchievedBoardList(ctx context.Context, in *GetBoardListRequest, opts ...grpc.CallOption) (*GetBoardListResponse, error)
-	ArchiveBoard(ctx context.Context, in *ArchiveBoardRequest, opts ...grpc.CallOption) (*ArchiveBoardResponse, error)
+	ChangeBoardVisibility(ctx context.Context, in *ChangeBoardVisibilityRequest, opts ...grpc.CallOption) (*ChangeBoardVisibilityResponse, error)
+	AddLabel(ctx context.Context, in *AddLabelRequest, opts ...grpc.CallOption) (*AddLabelResponse, error)
+	RemoveLabel(ctx context.Context, in *RemoveLabelRequest, opts ...grpc.CallOption) (*RemoveLabelResponse, error)
+	GetArchivedBoardList(ctx context.Context, in *GetArchivedBoardListRequest, opts ...grpc.CallOption) (*GetArchivedBoardListResponse, error)
 	RestoreBoard(ctx context.Context, in *RestoreBoardRequest, opts ...grpc.CallOption) (*RestoreBoardResponse, error)
+	ArchiveBoard(ctx context.Context, in *ArchiveBoardRequest, opts ...grpc.CallOption) (*ArchiveBoardResponse, error)
+	DeleteBoard(ctx context.Context, in *DeleteBoardRequest, opts ...grpc.CallOption) (*DeleteBoardResponse, error)
 }
 
 type boardServiceClient struct {
@@ -63,15 +66,6 @@ func (c *boardServiceClient) GetBoardByID(ctx context.Context, in *GetBoardByIDR
 	return out, nil
 }
 
-func (c *boardServiceClient) GetBoardUsers(ctx context.Context, in *GetBoardUsersRequest, opts ...grpc.CallOption) (*GetBoardUsersResponse, error) {
-	out := new(GetBoardUsersResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetBoardUsers", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *boardServiceClient) GetBoardList(ctx context.Context, in *GetBoardListRequest, opts ...grpc.CallOption) (*GetBoardListResponse, error) {
 	out := new(GetBoardListResponse)
 	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetBoardList", in, out, opts...)
@@ -81,44 +75,44 @@ func (c *boardServiceClient) GetBoardList(ctx context.Context, in *GetBoardListR
 	return out, nil
 }
 
-func (c *boardServiceClient) UpdateBoard(ctx context.Context, in *UpdateBoardRequest, opts ...grpc.CallOption) (*UpdateBoardResponse, error) {
-	out := new(UpdateBoardResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/UpdateBoard", in, out, opts...)
+func (c *boardServiceClient) GetBoardMembers(ctx context.Context, in *GetBoardMembersRequest, opts ...grpc.CallOption) (*GetBoardMembersResponse, error) {
+	out := new(GetBoardMembersResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetBoardMembers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *boardServiceClient) DeleteBoard(ctx context.Context, in *DeleteBoardRequest, opts ...grpc.CallOption) (*DeleteBoardResponse, error) {
-	out := new(DeleteBoardResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/DeleteBoard", in, out, opts...)
+func (c *boardServiceClient) UpdateBoardName(ctx context.Context, in *UpdateBoardNameRequest, opts ...grpc.CallOption) (*UpdateBoardNameResponse, error) {
+	out := new(UpdateBoardNameResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/UpdateBoardName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *boardServiceClient) AddBoardUser(ctx context.Context, in *AddUsersRequest, opts ...grpc.CallOption) (*AddUsersResponse, error) {
-	out := new(AddUsersResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AddBoardUser", in, out, opts...)
+func (c *boardServiceClient) AddBoardUsers(ctx context.Context, in *AddBoardUsersRequest, opts ...grpc.CallOption) (*AddBoardUsersResponse, error) {
+	out := new(AddBoardUsersResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AddBoardUsers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *boardServiceClient) RemoveBoardUser(ctx context.Context, in *RemoveUsersRequest, opts ...grpc.CallOption) (*RemoveUsersResponse, error) {
-	out := new(RemoveUsersResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/RemoveBoardUser", in, out, opts...)
+func (c *boardServiceClient) RemoveBoardUsers(ctx context.Context, in *RemoveBoardUsersRequest, opts ...grpc.CallOption) (*RemoveBoardUsersResponse, error) {
+	out := new(RemoveBoardUsersResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/RemoveBoardUsers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *boardServiceClient) AssignBoardUserRole(ctx context.Context, in *AssignUserRoleRequest, opts ...grpc.CallOption) (*AssignUserRoleResponse, error) {
-	out := new(AssignUserRoleResponse)
+func (c *boardServiceClient) AssignBoardUserRole(ctx context.Context, in *AssignBoardUserRoleRequest, opts ...grpc.CallOption) (*AssignBoardUserRoleResponse, error) {
+	out := new(AssignBoardUserRoleResponse)
 	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AssignBoardUserRole", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -135,18 +129,36 @@ func (c *boardServiceClient) ChangeBoardOwner(ctx context.Context, in *ChangeBoa
 	return out, nil
 }
 
-func (c *boardServiceClient) GetAchievedBoardList(ctx context.Context, in *GetBoardListRequest, opts ...grpc.CallOption) (*GetBoardListResponse, error) {
-	out := new(GetBoardListResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetAchievedBoardList", in, out, opts...)
+func (c *boardServiceClient) ChangeBoardVisibility(ctx context.Context, in *ChangeBoardVisibilityRequest, opts ...grpc.CallOption) (*ChangeBoardVisibilityResponse, error) {
+	out := new(ChangeBoardVisibilityResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/ChangeBoardVisibility", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *boardServiceClient) ArchiveBoard(ctx context.Context, in *ArchiveBoardRequest, opts ...grpc.CallOption) (*ArchiveBoardResponse, error) {
-	out := new(ArchiveBoardResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/ArchiveBoard", in, out, opts...)
+func (c *boardServiceClient) AddLabel(ctx context.Context, in *AddLabelRequest, opts ...grpc.CallOption) (*AddLabelResponse, error) {
+	out := new(AddLabelResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AddLabel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *boardServiceClient) RemoveLabel(ctx context.Context, in *RemoveLabelRequest, opts ...grpc.CallOption) (*RemoveLabelResponse, error) {
+	out := new(RemoveLabelResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/RemoveLabel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *boardServiceClient) GetArchivedBoardList(ctx context.Context, in *GetArchivedBoardListRequest, opts ...grpc.CallOption) (*GetArchivedBoardListResponse, error) {
+	out := new(GetArchivedBoardListResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetArchivedBoardList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,23 +174,44 @@ func (c *boardServiceClient) RestoreBoard(ctx context.Context, in *RestoreBoardR
 	return out, nil
 }
 
+func (c *boardServiceClient) ArchiveBoard(ctx context.Context, in *ArchiveBoardRequest, opts ...grpc.CallOption) (*ArchiveBoardResponse, error) {
+	out := new(ArchiveBoardResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/ArchiveBoard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *boardServiceClient) DeleteBoard(ctx context.Context, in *DeleteBoardRequest, opts ...grpc.CallOption) (*DeleteBoardResponse, error) {
+	out := new(DeleteBoardResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/DeleteBoard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BoardServiceServer is the server API for BoardService service.
 // All implementations must embed UnimplementedBoardServiceServer
 // for forward compatibility
 type BoardServiceServer interface {
 	CreateBoard(context.Context, *CreateBoardRequest) (*CreateBoardResponse, error)
 	GetBoardByID(context.Context, *GetBoardByIDRequest) (*GetBoardByIDResponse, error)
-	GetBoardUsers(context.Context, *GetBoardUsersRequest) (*GetBoardUsersResponse, error)
 	GetBoardList(context.Context, *GetBoardListRequest) (*GetBoardListResponse, error)
-	UpdateBoard(context.Context, *UpdateBoardRequest) (*UpdateBoardResponse, error)
-	DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error)
-	AddBoardUser(context.Context, *AddUsersRequest) (*AddUsersResponse, error)
-	RemoveBoardUser(context.Context, *RemoveUsersRequest) (*RemoveUsersResponse, error)
-	AssignBoardUserRole(context.Context, *AssignUserRoleRequest) (*AssignUserRoleResponse, error)
+	GetBoardMembers(context.Context, *GetBoardMembersRequest) (*GetBoardMembersResponse, error)
+	UpdateBoardName(context.Context, *UpdateBoardNameRequest) (*UpdateBoardNameResponse, error)
+	AddBoardUsers(context.Context, *AddBoardUsersRequest) (*AddBoardUsersResponse, error)
+	RemoveBoardUsers(context.Context, *RemoveBoardUsersRequest) (*RemoveBoardUsersResponse, error)
+	AssignBoardUserRole(context.Context, *AssignBoardUserRoleRequest) (*AssignBoardUserRoleResponse, error)
 	ChangeBoardOwner(context.Context, *ChangeBoardOwnerRequest) (*ChangeBoardOwnerResponse, error)
-	GetAchievedBoardList(context.Context, *GetBoardListRequest) (*GetBoardListResponse, error)
-	ArchiveBoard(context.Context, *ArchiveBoardRequest) (*ArchiveBoardResponse, error)
+	ChangeBoardVisibility(context.Context, *ChangeBoardVisibilityRequest) (*ChangeBoardVisibilityResponse, error)
+	AddLabel(context.Context, *AddLabelRequest) (*AddLabelResponse, error)
+	RemoveLabel(context.Context, *RemoveLabelRequest) (*RemoveLabelResponse, error)
+	GetArchivedBoardList(context.Context, *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error)
 	RestoreBoard(context.Context, *RestoreBoardRequest) (*RestoreBoardResponse, error)
+	ArchiveBoard(context.Context, *ArchiveBoardRequest) (*ArchiveBoardResponse, error)
+	DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error)
 	mustEmbedUnimplementedBoardServiceServer()
 }
 
@@ -192,38 +225,47 @@ func (UnimplementedBoardServiceServer) CreateBoard(context.Context, *CreateBoard
 func (UnimplementedBoardServiceServer) GetBoardByID(context.Context, *GetBoardByIDRequest) (*GetBoardByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBoardByID not implemented")
 }
-func (UnimplementedBoardServiceServer) GetBoardUsers(context.Context, *GetBoardUsersRequest) (*GetBoardUsersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetBoardUsers not implemented")
-}
 func (UnimplementedBoardServiceServer) GetBoardList(context.Context, *GetBoardListRequest) (*GetBoardListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBoardList not implemented")
 }
-func (UnimplementedBoardServiceServer) UpdateBoard(context.Context, *UpdateBoardRequest) (*UpdateBoardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateBoard not implemented")
+func (UnimplementedBoardServiceServer) GetBoardMembers(context.Context, *GetBoardMembersRequest) (*GetBoardMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBoardMembers not implemented")
 }
-func (UnimplementedBoardServiceServer) DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteBoard not implemented")
+func (UnimplementedBoardServiceServer) UpdateBoardName(context.Context, *UpdateBoardNameRequest) (*UpdateBoardNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBoardName not implemented")
 }
-func (UnimplementedBoardServiceServer) AddBoardUser(context.Context, *AddUsersRequest) (*AddUsersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddBoardUser not implemented")
+func (UnimplementedBoardServiceServer) AddBoardUsers(context.Context, *AddBoardUsersRequest) (*AddBoardUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddBoardUsers not implemented")
 }
-func (UnimplementedBoardServiceServer) RemoveBoardUser(context.Context, *RemoveUsersRequest) (*RemoveUsersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveBoardUser not implemented")
+func (UnimplementedBoardServiceServer) RemoveBoardUsers(context.Context, *RemoveBoardUsersRequest) (*RemoveBoardUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveBoardUsers not implemented")
 }
-func (UnimplementedBoardServiceServer) AssignBoardUserRole(context.Context, *AssignUserRoleRequest) (*AssignUserRoleResponse, error) {
+func (UnimplementedBoardServiceServer) AssignBoardUserRole(context.Context, *AssignBoardUserRoleRequest) (*AssignBoardUserRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AssignBoardUserRole not implemented")
 }
 func (UnimplementedBoardServiceServer) ChangeBoardOwner(context.Context, *ChangeBoardOwnerRequest) (*ChangeBoardOwnerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeBoardOwner not implemented")
 }
-func (UnimplementedBoardServiceServer) GetAchievedBoardList(context.Context, *GetBoardListRequest) (*GetBoardListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAchievedBoardList not implemented")
+func (UnimplementedBoardServiceServer) ChangeBoardVisibility(context.Context, *ChangeBoardVisibilityRequest) (*ChangeBoardVisibilityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeBoardVisibility not implemented")
+}
+func (UnimplementedBoardServiceServer) AddLabel(context.Context, *AddLabelRequest) (*AddLabelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddLabel not implemented")
+}
+func (UnimplementedBoardServiceServer) RemoveLabel(context.Context, *RemoveLabelRequest) (*RemoveLabelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveLabel not implemented")
+}
+func (UnimplementedBoardServiceServer) GetArchivedBoardList(context.Context, *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetArchivedBoardList not implemented")
+}
+func (UnimplementedBoardServiceServer) RestoreBoard(context.Context, *RestoreBoardRequest) (*RestoreBoardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreBoard not implemented")
 }
 func (UnimplementedBoardServiceServer) ArchiveBoard(context.Context, *ArchiveBoardRequest) (*ArchiveBoardResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ArchiveBoard not implemented")
 }
-func (UnimplementedBoardServiceServer) RestoreBoard(context.Context, *RestoreBoardRequest) (*RestoreBoardResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RestoreBoard not implemented")
+func (UnimplementedBoardServiceServer) DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteBoard not implemented")
 }
 func (UnimplementedBoardServiceServer) mustEmbedUnimplementedBoardServiceServer() {}
 
@@ -274,24 +316,6 @@ func _BoardService_GetBoardByID_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_GetBoardUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBoardUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BoardServiceServer).GetBoardUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/boardpb.BoardService/GetBoardUsers",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).GetBoardUsers(ctx, req.(*GetBoardUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _BoardService_GetBoardList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetBoardListRequest)
 	if err := dec(in); err != nil {
@@ -310,80 +334,80 @@ func _BoardService_GetBoardList_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_UpdateBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateBoardRequest)
+func _BoardService_GetBoardMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBoardMembersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).UpdateBoard(ctx, in)
+		return srv.(BoardServiceServer).GetBoardMembers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/UpdateBoard",
+		FullMethod: "/boardpb.BoardService/GetBoardMembers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).UpdateBoard(ctx, req.(*UpdateBoardRequest))
+		return srv.(BoardServiceServer).GetBoardMembers(ctx, req.(*GetBoardMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_DeleteBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteBoardRequest)
+func _BoardService_UpdateBoardName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBoardNameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).DeleteBoard(ctx, in)
+		return srv.(BoardServiceServer).UpdateBoardName(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/DeleteBoard",
+		FullMethod: "/boardpb.BoardService/UpdateBoardName",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).DeleteBoard(ctx, req.(*DeleteBoardRequest))
+		return srv.(BoardServiceServer).UpdateBoardName(ctx, req.(*UpdateBoardNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_AddBoardUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddUsersRequest)
+func _BoardService_AddBoardUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddBoardUsersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).AddBoardUser(ctx, in)
+		return srv.(BoardServiceServer).AddBoardUsers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/AddBoardUser",
+		FullMethod: "/boardpb.BoardService/AddBoardUsers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).AddBoardUser(ctx, req.(*AddUsersRequest))
+		return srv.(BoardServiceServer).AddBoardUsers(ctx, req.(*AddBoardUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_RemoveBoardUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveUsersRequest)
+func _BoardService_RemoveBoardUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveBoardUsersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).RemoveBoardUser(ctx, in)
+		return srv.(BoardServiceServer).RemoveBoardUsers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/RemoveBoardUser",
+		FullMethod: "/boardpb.BoardService/RemoveBoardUsers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).RemoveBoardUser(ctx, req.(*RemoveUsersRequest))
+		return srv.(BoardServiceServer).RemoveBoardUsers(ctx, req.(*RemoveBoardUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _BoardService_AssignBoardUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AssignUserRoleRequest)
+	in := new(AssignBoardUserRoleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -395,7 +419,7 @@ func _BoardService_AssignBoardUserRole_Handler(srv interface{}, ctx context.Cont
 		FullMethod: "/boardpb.BoardService/AssignBoardUserRole",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).AssignBoardUserRole(ctx, req.(*AssignUserRoleRequest))
+		return srv.(BoardServiceServer).AssignBoardUserRole(ctx, req.(*AssignBoardUserRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -418,38 +442,74 @@ func _BoardService_ChangeBoardOwner_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_GetAchievedBoardList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBoardListRequest)
+func _BoardService_ChangeBoardVisibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeBoardVisibilityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).GetAchievedBoardList(ctx, in)
+		return srv.(BoardServiceServer).ChangeBoardVisibility(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/GetAchievedBoardList",
+		FullMethod: "/boardpb.BoardService/ChangeBoardVisibility",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).GetAchievedBoardList(ctx, req.(*GetBoardListRequest))
+		return srv.(BoardServiceServer).ChangeBoardVisibility(ctx, req.(*ChangeBoardVisibilityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_ArchiveBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ArchiveBoardRequest)
+func _BoardService_AddLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddLabelRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).ArchiveBoard(ctx, in)
+		return srv.(BoardServiceServer).AddLabel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/ArchiveBoard",
+		FullMethod: "/boardpb.BoardService/AddLabel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).ArchiveBoard(ctx, req.(*ArchiveBoardRequest))
+		return srv.(BoardServiceServer).AddLabel(ctx, req.(*AddLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BoardService_RemoveLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveLabelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).RemoveLabel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/RemoveLabel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).RemoveLabel(ctx, req.(*RemoveLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BoardService_GetArchivedBoardList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetArchivedBoardListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).GetArchivedBoardList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/GetArchivedBoardList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).GetArchivedBoardList(ctx, req.(*GetArchivedBoardListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -472,6 +532,42 @@ func _BoardService_RestoreBoard_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BoardService_ArchiveBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ArchiveBoardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).ArchiveBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/ArchiveBoard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).ArchiveBoard(ctx, req.(*ArchiveBoardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BoardService_DeleteBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBoardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).DeleteBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/DeleteBoard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).DeleteBoard(ctx, req.(*DeleteBoardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BoardService_ServiceDesc is the grpc.ServiceDesc for BoardService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -488,28 +584,24 @@ var BoardService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BoardService_GetBoardByID_Handler,
 		},
 		{
-			MethodName: "GetBoardUsers",
-			Handler:    _BoardService_GetBoardUsers_Handler,
-		},
-		{
 			MethodName: "GetBoardList",
 			Handler:    _BoardService_GetBoardList_Handler,
 		},
 		{
-			MethodName: "UpdateBoard",
-			Handler:    _BoardService_UpdateBoard_Handler,
+			MethodName: "GetBoardMembers",
+			Handler:    _BoardService_GetBoardMembers_Handler,
 		},
 		{
-			MethodName: "DeleteBoard",
-			Handler:    _BoardService_DeleteBoard_Handler,
+			MethodName: "UpdateBoardName",
+			Handler:    _BoardService_UpdateBoardName_Handler,
 		},
 		{
-			MethodName: "AddBoardUser",
-			Handler:    _BoardService_AddBoardUser_Handler,
+			MethodName: "AddBoardUsers",
+			Handler:    _BoardService_AddBoardUsers_Handler,
 		},
 		{
-			MethodName: "RemoveBoardUser",
-			Handler:    _BoardService_RemoveBoardUser_Handler,
+			MethodName: "RemoveBoardUsers",
+			Handler:    _BoardService_RemoveBoardUsers_Handler,
 		},
 		{
 			MethodName: "AssignBoardUserRole",
@@ -520,16 +612,32 @@ var BoardService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BoardService_ChangeBoardOwner_Handler,
 		},
 		{
-			MethodName: "GetAchievedBoardList",
-			Handler:    _BoardService_GetAchievedBoardList_Handler,
+			MethodName: "ChangeBoardVisibility",
+			Handler:    _BoardService_ChangeBoardVisibility_Handler,
+		},
+		{
+			MethodName: "AddLabel",
+			Handler:    _BoardService_AddLabel_Handler,
+		},
+		{
+			MethodName: "RemoveLabel",
+			Handler:    _BoardService_RemoveLabel_Handler,
+		},
+		{
+			MethodName: "GetArchivedBoardList",
+			Handler:    _BoardService_GetArchivedBoardList_Handler,
+		},
+		{
+			MethodName: "RestoreBoard",
+			Handler:    _BoardService_RestoreBoard_Handler,
 		},
 		{
 			MethodName: "ArchiveBoard",
 			Handler:    _BoardService_ArchiveBoard_Handler,
 		},
 		{
-			MethodName: "RestoreBoard",
-			Handler:    _BoardService_RestoreBoard_Handler,
+			MethodName: "DeleteBoard",
+			Handler:    _BoardService_DeleteBoard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

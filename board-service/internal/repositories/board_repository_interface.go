@@ -70,6 +70,22 @@ type ChangeBoardOwnerRequest struct {
 	NewOwnerID     uint64
 }
 
+type ChangeBoardVisibilityRequest struct {
+	BoardID    uint64
+	Visibility string
+}
+
+type AddLabelRequest struct {
+	BoardID uint64
+	Name    string
+	Color   string
+}
+
+type RemoveLabelRequest struct {
+	BoardID uint64
+	LabelID uint64
+}
+
 type GetArchivedBoardListRequest struct {
 	PageNumber uint64
 	PageSize   uint64
@@ -103,11 +119,11 @@ type BoardRepository interface {
 	RemoveBoardUsers(req *RemoveBoardUsersRequest) error
 	AssignBoardUserRole(req *AssignBoardUserRoleRequest) error
 	ChangeBoardOwner(req *ChangeBoardOwnerRequest) error
-	// Change board visibility
-	// Add label
-	// Remove label
+	ChangeBoardVisibility(req *ChangeBoardVisibilityRequest) error
+	AddLabel(req *AddLabelRequest) (*models.Label, error)
+	RemoveLabel(req *RemoveLabelRequest) error
 	GetArchivedBoardList(req *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error)
-	RestoreBoard(req *RestoreBoardRequest) error
 	ArchiveBoard(req *ArchiveBoardRequest) error
+	RestoreBoard(req *RestoreBoardRequest) error
 	DeleteBoard(req *DeleteBoardRequest) error
 }

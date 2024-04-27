@@ -20,6 +20,8 @@ type BoardMetaDTO struct {
 	Name       string
 	Visibility string
 	IsArchived bool
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type LabelDTO struct {

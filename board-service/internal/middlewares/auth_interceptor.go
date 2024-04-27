@@ -18,12 +18,26 @@ import (
 
 var (
 	checkRoleException = map[string]bool{
-		"/proto.ListService/GetBoardByID": true,
+		"/proto.BoardService/GetBoardByID":         true,
+		"/proto.BoardService/GetBoardList":         true,
+		"/proto.BoardService/GetArchivedBoardList": true,
+		"/proto.BoardService/GetBoardMembers":      true,
+		"/proto.BoardService/CreateBoard":          true,
 		// Add other methods here...
 	}
 
 	checkRole = map[string]string{
-		"/proto.ListService/CreateBoard": roles.MemberRole,
+		"/proto.BoardService/UpdateBoardName":       roles.AdminRole,
+		"/proto.BoardService/AddBoardUsers":         roles.AdminRole,
+		"/proto.BoardService/RemoveBoardUsers":      roles.AdminRole,
+		"/proto.BoardService/AssignBoardUserRole":   roles.AdminRole,
+		"/proto.BoardService/ChangeBoardOwner":      roles.OwnerRole,
+		"/proto.BoardService/ChangeBoardVisibility": roles.AdminRole,
+		"/proto.BoardService/AddLabel":              roles.MemberRole,
+		"/proto.BoardService/RemoveLabel":           roles.MemberRole,
+		"/proto.BoardService/RestoreBoard":          roles.AdminRole,
+		"/proto.BoardService/ArchiveBoard":          roles.AdminRole,
+		"/proto.BoardService/DeleteBoard":           roles.OwnerRole,
 		// Add other methods here...
 	}
 )
@@ -51,7 +65,7 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 			return nil, errorhandler.NewGrpcBadRequestError()
 		}
 
-		// Extract userID, boardID and cardID from meta
+		// Extract userID and boardID from meta
 
 		userID, err := helpers.ExtractUserIDFromContext(ctx)
 		if err != nil {
@@ -63,10 +77,10 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 			return nil, err
 		}
 
-		// Insert userID, boardID and cardID to context
+		// Insert userID and boardID to context
 
 		ctx = context.WithValue(ctx, contextkeys.UserIDKey{}, userID)
-		ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
+		// ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
 
 		if _, err := authService.CheckBoardUserRole(ctx, &pb_auth.CheckBoardUserRoleRequest{
 			UserID:       userID,

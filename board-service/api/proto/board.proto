@@ -18,7 +18,7 @@ message Board {
     uint64 userID = 2;
     string name = 3;
     string visibility = 4;
-    repeated Permission permissions = 5;
+    repeated BoardMember members = 5;
     repeated List lists = 6;
     repeated Card cards = 7;
     repeated Label labels = 8;
@@ -85,25 +85,18 @@ message Attachment {
 
 message BoardMeta {
     uint64 boardID = 1;
-    uint64 userID = 2;
     string name = 3;
     string visibility = 4;
     google.protobuf.Timestamp created_at = 5;
     google.protobuf.Timestamp updated_at = 6;
 }
 
-message Permission {
-    uint64 permissionID = 1;
-    uint64 boardID = 2;
-    uint64 userID = 3;
-    string role = 4;
-}
-
-message User {
-    uint64 userID = 1;
-    string user_name = 2;
-    string full_name = 3;
-    string role = 4;
+message BoardMember {
+    uint64 boardID = 1;
+    uint64 userID = 2;
+    string username = 3;
+    string fullname = 4;
+    string role = 5;
 }
 
 // Request and Response Messages
@@ -124,112 +117,91 @@ message GetBoardByIDResponse {
     Board board = 1;
 }
 
-message GetBoardUsersRequest {
-    uint64 boardID = 1;
-}
-
-message GetBoardUsersResponse {
-    repeated User users = 1;
-}
-
 message GetBoardListRequest {
-    uint64 userID = 1;
-    uint64 page_number = 2;
-    uint64 page_size = 3;
-
+    uint64 pageNumber = 1;
+    uint64 pageSize = 2;
+    uint64 userID = 3;
 }
 
 message GetBoardListResponse {
-    Pagination pagination = 1;
-    repeated BoardMeta boards = 2;
+    repeated BoardMeta boards = 1;
+    Pagination pagination = 2;
 }
 
-message UpdateBoardRequest {
+message GetBoardMembersRequest {
     uint64 boardID = 1;
-    string name = 3;
 }
 
-message UpdateBoardResponse {
+message GetBoardMembersResponse {
+    repeated BoardMember members = 1;
+}
+
+message UpdateBoardNameRequest {
     uint64 boardID = 1;
-    string name = 3;
+    string name = 2;
 }
 
-message DeleteBoardRequest {
-    uint64 id = 1;
-}
-
-message DeleteBoardResponse {
+message UpdateBoardNameResponse {
     string message = 1;
 }
 
-message AddUsersRequest {
+message AddBoardUsersRequest {
+    uint64 boardID = 1;
+    repeated uint64 userIDs = 2;
+    string role = 3;
+}
+
+message AddBoardUsersResponse {
+    string message = 1;
+}
+
+message RemoveBoardUsersRequest {
+    uint64 boardID = 1;
+    repeated uint64 userIDs = 2;
+}
+
+message RemoveBoardUsersResponse {
+    string message = 1;
+}
+
+message AssignBoardUserRoleRequest {
     uint64 boardID = 1;
     uint64 userID = 2;
     repeated uint64 userIDs = 3;
     string role = 4;
 }
-  
-message AddUsersResponse {
-    string message = 1;
-}
-  
-message RemoveUsersRequest {
-    uint64 boardID = 1;
-    repeated uint64 userIDs = 3;
-}
 
-message RemoveUsersResponse {
-    string message = 1;
-}
-
-message AssignUserRoleRequest {
-    uint64 boardID = 1;
-    uint64 assign_userID = 3;
-    string role = 4;
-}
-
-message AssignUserRoleResponse {
+message AssignBoardUserRoleResponse {
     string message = 1;
 }
 
 message ChangeBoardOwnerRequest {
     uint64 boardID = 1;
-    uint64 current_ownerID = 3;
-    uint64 new_ownerID = 4;
+    uint64 newOwnerID = 2;
 }
 
 message ChangeBoardOwnerResponse {
     string message = 1;
 }
 
-message GetBoardPermissionByCardRequest {
-    uint64 cardID = 2;
-    uint64 userID = 3;
-}
-
-message GetBoardPermissionByCardResponse {
-    uint64 boardID  = 1;
-    string visibility = 2;
-    Permission Permission = 3;
-}
-
-message GetBoardPermissionByListRequest {
-    uint64 listID = 2;
-    uint64 userID = 3;
-}
-
-message GetBoardPermissionByListResponse {
-    uint64 boardID  = 1;
-    string visibility = 2;
-    Permission Permission = 3;
-}
-
-message ArchiveBoardRequest {
+message ChangeBoardVisibilityRequest {
     uint64 boardID = 1;
+    string visibility = 2;
 }
 
-message ArchiveBoardResponse {
+message ChangeBoardVisibilityResponse {
     string message = 1;
+}
+
+message GetArchivedBoardListRequest {
+    uint64 pageNumber = 1;
+    uint64 pageSize = 2;
+    uint64 userID = 3;
+}
+
+message GetArchivedBoardListResponse {
+    repeated BoardMeta boards = 1;
+    Pagination pagination = 2;
 }
 
 message RestoreBoardRequest {
@@ -240,19 +212,58 @@ message RestoreBoardResponse {
     string message = 1;
 }
 
+message AddLabelRequest {
+    uint64 boardID = 1;
+    string name = 2;
+    string color = 3;
+}
+
+message AddLabelResponse {
+    Label label = 1;
+}
+
+message RemoveLabelRequest {
+    uint64 boardID = 1;
+    uint64 labelID = 2;
+}
+
+message RemoveLabelResponse {
+    string message = 1;
+}
+
+message ArchiveBoardRequest {
+    uint64 boardID = 1;
+}
+
+message ArchiveBoardResponse {
+    string message = 1;
+}
+
+message DeleteBoardRequest {
+    uint64 boardID = 1;
+}
+
+message DeleteBoardResponse {
+    string message = 1;
+}
+
 // Service Definition
 service BoardService {
     rpc CreateBoard(CreateBoardRequest) returns (CreateBoardResponse);
     rpc GetBoardByID(GetBoardByIDRequest) returns (GetBoardByIDResponse);
-    rpc GetBoardUsers(GetBoardUsersRequest) returns (GetBoardUsersResponse);
     rpc GetBoardList(GetBoardListRequest) returns (GetBoardListResponse);
-    rpc UpdateBoard(UpdateBoardRequest) returns (UpdateBoardResponse);
-    rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
-    rpc AddBoardUser(AddUsersRequest) returns (AddUsersResponse);
-    rpc RemoveBoardUser(RemoveUsersRequest) returns (RemoveUsersResponse);
-    rpc AssignBoardUserRole(AssignUserRoleRequest) returns (AssignUserRoleResponse);
+    rpc GetArchivedBoardList(GetArchivedBoardListRequest) returns (GetArchivedBoardListResponse);
+    rpc GetBoardMembers(GetBoardMembersRequest) returns (GetBoardMembersResponse);
+
+    rpc UpdateBoardName(UpdateBoardNameRequest) returns (UpdateBoardNameResponse);
+    rpc AddBoardUsers(AddBoardUsersRequest) returns (AddBoardUsersResponse);
+    rpc RemoveBoardUsers(RemoveBoardUsersRequest) returns (RemoveBoardUsersResponse);
+    rpc AssignBoardUserRole(AssignBoardUserRoleRequest) returns (AssignBoardUserRoleResponse);
     rpc ChangeBoardOwner(ChangeBoardOwnerRequest) returns (ChangeBoardOwnerResponse);
-    rpc GetAchievedBoardList(GetBoardListRequest) returns (GetBoardListResponse);
-    rpc ArchiveBoard(ArchiveBoardRequest) returns (ArchiveBoardResponse);
+    rpc ChangeBoardVisibility(ChangeBoardVisibilityRequest) returns (ChangeBoardVisibilityResponse);
+    rpc AddLabel(AddLabelRequest) returns (AddLabelResponse);
+    rpc RemoveLabel(RemoveLabelRequest) returns (RemoveLabelResponse);
     rpc RestoreBoard(RestoreBoardRequest) returns (RestoreBoardResponse);
+    rpc ArchiveBoard(ArchiveBoardRequest) returns (ArchiveBoardResponse);
+    rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
 }

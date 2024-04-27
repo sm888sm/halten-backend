@@ -7,6 +7,7 @@ import (
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/helpers"
 	"github.com/sm888sm/halten-backend/models"
 
 	"gorm.io/gorm"
@@ -362,22 +363,78 @@ func (r *GormBoardRepository) ChangeBoardOwner(req *ChangeBoardOwnerRequest) err
 	})
 }
 
-func (r *GormBoardRepository) ArchiveBoard(req *ArchiveBoardRequest) error {
-	// Update the 'archived' field of the board to true
-	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", true).Error; err != nil {
-		return errorhandler.NewGrpcInternalError()
-	}
+func (r *GormBoardRepository) ChangeBoardVisibility(req *ChangeBoardVisibilityRequest) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Check if the board exists
+		var board models.Board
+		if err := tx.First(&board, req.BoardID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
+			}
+			return errorhandler.NewGrpcInternalError()
+		}
 
-	return nil
+		// Validate the visibility value
+		validVisibilities := []string{"private", "public", "team"}
+		if !helpers.Contains(validVisibilities, req.Visibility) {
+			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid visibility value")
+		}
+
+		// Update the visibility of the board
+		result := tx.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("visibility", req.Visibility)
+		if result.Error != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+		if result.RowsAffected == 0 {
+			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
+		}
+		return nil
+	})
 }
 
-func (r *GormBoardRepository) RestoreBoard(req *RestoreBoardRequest) error {
-	// Update the 'archived' field of the board to false
-	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", false).Error; err != nil {
-		return errorhandler.NewGrpcInternalError()
+func (r *GormBoardRepository) AddLabel(req *AddLabelRequest) (*models.Label, error) {
+	label := models.Label{
+		Name:  req.Name,
+		Color: req.Color,
 	}
 
-	return nil
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&label).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &label, nil
+}
+
+func (r *GormBoardRepository) RemoveLabel(req *RemoveLabelRequest) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Find the label
+		var label models.Label
+		if err := tx.Where("id = ? AND board_id = ?", req.LabelID, req.BoardID).First(&label).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Label not found")
+			}
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Remove the label from all cards
+		if err := tx.Model(&label).Association("Cards").Clear(); err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		// Delete the label
+		if err := tx.Delete(&models.Label{}, req.LabelID).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
+
+		return nil
+	})
 }
 
 func (r *GormBoardRepository) GetArchivedBoardList(req *GetArchivedBoardListRequest) (*GetArchivedBoardListResponse, error) {
@@ -433,6 +490,24 @@ func (r *GormBoardRepository) GetArchivedBoardList(req *GetArchivedBoardListRequ
 		Boards:     boardMetaDTOs,
 		Pagination: &pagination,
 	}, nil
+}
+
+func (r *GormBoardRepository) ArchiveBoard(req *ArchiveBoardRequest) error {
+	// Update the 'archived' field of the board to true
+	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", true).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	return nil
+}
+
+func (r *GormBoardRepository) RestoreBoard(req *RestoreBoardRequest) error {
+	// Update the 'archived' field of the board to false
+	if err := r.db.Model(&models.Board{}).Where("id = ?", req.BoardID).Update("archived", false).Error; err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+
+	return nil
 }
 
 func (r *GormBoardRepository) DeleteBoard(req *DeleteBoardRequest) error {
