@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
-	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	models "github.com/sm888sm/halten-backend/models"
 
@@ -21,55 +20,49 @@ func NewListRepository(db *gorm.DB) *GormListRepository {
 	return &GormListRepository{db: db}
 }
 
-func (r *GormListRepository) CreateList(list *models.List, userID uint) error {
-	if err := r.checkPermission(list.BoardID, userID); err != nil {
-		return err
-	}
+func (r *GormListRepository) CreateList(req *CreateListRequest) (*CreateListResponse, error) {
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(list).Error; err != nil {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(req.List).Error; err != nil {
 			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, err.Error())
 		}
 		return nil
 	})
-}
 
-func (r *GormListRepository) GetList(id uint, boardID uint, userID uint) (*models.List, error) {
-	if err := r.checkPermission(boardID, userID); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
+	return &CreateListResponse{List: req.List}, nil
+}
+
+func (r *GormListRepository) GetListByID(req *GetListRequest) (*GetListResponse, error) {
+
 	var list models.List
-	if err := r.db.Where("id = ? AND board_id = ?", id).First(&list).Error; err != nil {
+	if err := r.db.Where("id = ? AND board_id = ?", req.ID, req.BoardID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 		}
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	return &list, nil
+	return &GetListResponse{List: &list}, nil
 }
 
-func (r *GormListRepository) GetListsByBoard(boardID uint, userID uint) ([]*models.List, error) {
-	if err := r.checkPermission(boardID, userID); err != nil {
-		return nil, err
-	}
+func (r *GormListRepository) GetListsByBoard(req *GetListsByBoardRequest) (*GetListsByBoardResponse, error) {
 
 	var lists []*models.List
-	if err := r.db.Where("board_id = ?", boardID).Find(&lists).Error; err != nil {
+	if err := r.db.Where("board_id = ?", req.BoardID).Find(&lists).Error; err != nil {
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	return lists, nil
+	return &GetListsByBoardResponse{Lists: lists}, nil
 }
 
-func (r *GormListRepository) UpdateList(id uint, name string, boardID uint, userID uint) error {
-	if err := r.checkPermission(boardID, userID); err != nil {
-		return err
-	}
+func (r *GormListRepository) UpdateListName(req *UpdateListNameRequest) error {
 
 	var existingList models.List
-	if err := r.db.Where("id = ? AND board_id = ?", id, boardID).First(&existingList).Error; err != nil {
+	if err := r.db.Where("id = ? AND board_id = ?", req.ID, req.BoardID).First(&existingList).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 		}
@@ -77,36 +70,17 @@ func (r *GormListRepository) UpdateList(id uint, name string, boardID uint, user
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&existingList).Updates(existingList).Update("name", name).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&existingList).Updates(existingList).Update("name", req.Name).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
 		return nil
 	})
 }
 
-func (r *GormListRepository) DeleteList(id uint, boardID uint, userID uint) error {
-	if err := r.checkPermission(boardID, userID); err != nil {
-		return err
-	}
-
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ? AND board_id = ?", id, boardID).Delete(&models.List{}).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
-			}
-			return errorhandler.NewGrpcInternalError()
-		}
-		return nil
-	})
-}
-
-func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID uint, userID uint) error {
-	if err := r.checkPermission(boardID, userID); err != nil {
-		return err
-	}
+func (r *GormListRepository) MoveListPosition(req *MoveListPositionRequest) error {
 
 	var count int64
-	r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", id, boardID).Count(&count)
+	r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ID, req.BoardID).Count(&count)
 	if count == 0 {
 		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 	}
@@ -114,7 +88,7 @@ func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID 
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Get all lists
 		var lists []*models.List
-		if err := tx.Where("board_id = ?", boardID).Find(&lists).Error; err != nil {
+		if err := tx.Where("board_id = ?", req.BoardID).Find(&lists).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
 			}
@@ -128,18 +102,21 @@ func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID 
 
 		// Update the positions of the lists
 		for i, l := range lists {
-			if l.ID == id {
-				l.Position = newPosition
+			if l.ID == req.ID {
+				l.Position = req.NewPosition
 			} else {
 				// Adjust the position to start from 1 and ensure no gaps
-				l.Position = i + 1
-				if l.Position >= newPosition {
+				l.Position = int64(i + 1)
+				if l.Position >= req.NewPosition {
 					l.Position++
 				}
 			}
+		}
 
-			if err := tx.Save(&l).Error; err != nil {
-				return err
+		// Save the updated lists
+		for _, l := range lists {
+			if err := tx.Save(l).Error; err != nil {
+				return errorhandler.NewGrpcInternalError()
 			}
 		}
 
@@ -147,18 +124,31 @@ func (r *GormListRepository) MoveListPosition(id uint, newPosition int, boardID 
 	})
 }
 
-func (r *GormListRepository) checkPermission(boardID uint, userID uint) error {
-	var permission models.Permission
-	if err := r.db.Where("board_id = ? AND user_id = ?", boardID, userID).First(&permission).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
+func (r *GormListRepository) ArchiveList(req *ArchiveListRequest) error {
+	err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", true).Error
+	if err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+	return nil
+}
+
+func (r *GormListRepository) RestoreList(req *RestoreListRequest) error {
+	err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", false).Error
+	if err != nil {
+		return errorhandler.NewGrpcInternalError()
+	}
+	return nil
+}
+
+func (r *GormListRepository) DeleteList(req *DeleteListRequest) error {
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ? AND board_id = ?", req.ID, req.BoardID).Delete(&models.List{}).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "List not found")
+			}
+			return errorhandler.NewGrpcInternalError()
 		}
-		return err
-	}
-
-	if permission.Role == roles.OwnerRole || permission.Role == roles.AdminRole || permission.Role == roles.MemberRole {
 		return nil
-	}
-
-	return errorhandler.NewAPIError(httpcodes.ErrForbidden, "User does not have permission to perform this operation")
+	})
 }

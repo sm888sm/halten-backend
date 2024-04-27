@@ -5,84 +5,85 @@ option go_package = "github.com/sm888sm/halten-backend/list-service/pb/list";
 // Data Structures (Messages)
 
 message List {
-    uint64 id = 1;
-    uint64 board_id = 2;
+    uint64 listID = 1;
+    uint64 boardID = 2;
     string name = 3;
     int32 position = 4;
 }
 
 message CreateListRequest {
-    uint64 user_id = 1;
-    uint64 board_id = 2;
-    string name = 3;
+    List list = 1;
 }
 
 message CreateListResponse {
-    uint64 id = 1;
-    uint64 user_id = 2;
-    uint64 board_id = 3;
-    string name = 4;
+    List list = 1;
+}
+
+message GetListByIDRequest {
+    uint64 listID = 1;
+}
+
+message GetListByIDResponse {
+    repeated List lists = 1;
 }
 
 message GetListsByBoardRequest {
-    uint64 board_id = 1;
-    uint64 user_id = 2;
-    uint64 id = 3;
+    uint64 boardID = 1;
 }
 
 message GetListsByBoardResponse {
     repeated List lists = 2;
 }
 
-message UpdateListRequest {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
-    string name = 4;
+message UpdateListNameRequest {
+    uint64 listID = 1;
+    string name = 2;
 }
 
-message UpdateListResponse {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
-    string name = 4;
-}
-
-message DeleteListRequest {
-    uint64 id = 1;
-    uint64 board_id = 2;
-    uint64 user_id = 3;
-}
-
-message DeleteListResponse {
-    bool message = 1;
+message UpdateListNameResponse {
+    string message = 1;
 }
 
 message MoveListPositionRequest {
-    uint64 id = 1;
+    uint64 listID = 1;
     uint64 new_position = 2;
-    uint64 board_id = 3;
-    uint64 user_id = 4;
 }
 
 message MoveListPositionResponse {
-    bool message = 1;
+    string message = 1;
 }
 
-message WatchListActivityRequest {
-    uint64 id = 1;
-    uint64 user_id = 2;
+message ArchiveListRequest {
+    uint64 listID = 1;
 }
 
-message WatchListActivityResponse {
+message ArchiveListResponse {
+    string  message = 1;
+}
+
+message RestoreListRequest {
+    uint64 listID = 1;
+}
+
+message RestoreListResponse {
+    string  message = 1;
+}
+
+message DeleteListRequest {
+    uint64 listID = 1;
+}
+
+message DeleteListResponse {
     string message = 1;
 }
 
 service ListService {
     rpc CreateList(CreateListRequest) returns (CreateListResponse) {}
+    rpc GetListByID(GetListByIDRequest) returns (GetListByIDResponse) {}
     rpc GetListsByBoard(GetListsByBoardRequest) returns (GetListsByBoardResponse) {}
-    rpc UpdateList(UpdateListRequest) returns (UpdateListResponse) {}
-    rpc DeleteList(DeleteListRequest) returns (DeleteListResponse) {}
+    rpc UpdateListName(UpdateListNameRequest) returns (UpdateListNameResponse) {}
     rpc MoveListPosition(MoveListPositionRequest) returns (MoveListPositionResponse) {}
-    rpc WatchListActivity(WatchListActivityRequest) returns (stream WatchListActivityResponse) {}
+    rpc ArchiveList(ArchiveListRequest) returns (ArchiveListResponse) {}
+	rpc RestoreList(RestoreListRequest) returns (RestoreListResponse) {}
+    rpc DeleteList(DeleteListRequest) returns (DeleteListResponse) {}
 }

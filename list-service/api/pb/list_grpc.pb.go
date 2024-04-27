@@ -23,11 +23,13 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ListServiceClient interface {
 	CreateList(ctx context.Context, in *CreateListRequest, opts ...grpc.CallOption) (*CreateListResponse, error)
+	GetListByID(ctx context.Context, in *GetListByIDRequest, opts ...grpc.CallOption) (*GetListByIDResponse, error)
 	GetListsByBoard(ctx context.Context, in *GetListsByBoardRequest, opts ...grpc.CallOption) (*GetListsByBoardResponse, error)
-	UpdateList(ctx context.Context, in *UpdateListRequest, opts ...grpc.CallOption) (*UpdateListResponse, error)
-	DeleteList(ctx context.Context, in *DeleteListRequest, opts ...grpc.CallOption) (*DeleteListResponse, error)
+	UpdateListName(ctx context.Context, in *UpdateListNameRequest, opts ...grpc.CallOption) (*UpdateListNameResponse, error)
 	MoveListPosition(ctx context.Context, in *MoveListPositionRequest, opts ...grpc.CallOption) (*MoveListPositionResponse, error)
-	WatchListActivity(ctx context.Context, in *WatchListActivityRequest, opts ...grpc.CallOption) (ListService_WatchListActivityClient, error)
+	ArchiveList(ctx context.Context, in *ArchiveListRequest, opts ...grpc.CallOption) (*ArchiveListResponse, error)
+	RestoreList(ctx context.Context, in *RestoreListRequest, opts ...grpc.CallOption) (*RestoreListResponse, error)
+	DeleteList(ctx context.Context, in *DeleteListRequest, opts ...grpc.CallOption) (*DeleteListResponse, error)
 }
 
 type listServiceClient struct {
@@ -47,6 +49,15 @@ func (c *listServiceClient) CreateList(ctx context.Context, in *CreateListReques
 	return out, nil
 }
 
+func (c *listServiceClient) GetListByID(ctx context.Context, in *GetListByIDRequest, opts ...grpc.CallOption) (*GetListByIDResponse, error) {
+	out := new(GetListByIDResponse)
+	err := c.cc.Invoke(ctx, "/listpb.ListService/GetListByID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *listServiceClient) GetListsByBoard(ctx context.Context, in *GetListsByBoardRequest, opts ...grpc.CallOption) (*GetListsByBoardResponse, error) {
 	out := new(GetListsByBoardResponse)
 	err := c.cc.Invoke(ctx, "/listpb.ListService/GetListsByBoard", in, out, opts...)
@@ -56,18 +67,9 @@ func (c *listServiceClient) GetListsByBoard(ctx context.Context, in *GetListsByB
 	return out, nil
 }
 
-func (c *listServiceClient) UpdateList(ctx context.Context, in *UpdateListRequest, opts ...grpc.CallOption) (*UpdateListResponse, error) {
-	out := new(UpdateListResponse)
-	err := c.cc.Invoke(ctx, "/listpb.ListService/UpdateList", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *listServiceClient) DeleteList(ctx context.Context, in *DeleteListRequest, opts ...grpc.CallOption) (*DeleteListResponse, error) {
-	out := new(DeleteListResponse)
-	err := c.cc.Invoke(ctx, "/listpb.ListService/DeleteList", in, out, opts...)
+func (c *listServiceClient) UpdateListName(ctx context.Context, in *UpdateListNameRequest, opts ...grpc.CallOption) (*UpdateListNameResponse, error) {
+	out := new(UpdateListNameResponse)
+	err := c.cc.Invoke(ctx, "/listpb.ListService/UpdateListName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,36 +85,31 @@ func (c *listServiceClient) MoveListPosition(ctx context.Context, in *MoveListPo
 	return out, nil
 }
 
-func (c *listServiceClient) WatchListActivity(ctx context.Context, in *WatchListActivityRequest, opts ...grpc.CallOption) (ListService_WatchListActivityClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ListService_ServiceDesc.Streams[0], "/listpb.ListService/WatchListActivity", opts...)
+func (c *listServiceClient) ArchiveList(ctx context.Context, in *ArchiveListRequest, opts ...grpc.CallOption) (*ArchiveListResponse, error) {
+	out := new(ArchiveListResponse)
+	err := c.cc.Invoke(ctx, "/listpb.ListService/ArchiveList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &listServiceWatchListActivityClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type ListService_WatchListActivityClient interface {
-	Recv() (*WatchListActivityResponse, error)
-	grpc.ClientStream
-}
-
-type listServiceWatchListActivityClient struct {
-	grpc.ClientStream
-}
-
-func (x *listServiceWatchListActivityClient) Recv() (*WatchListActivityResponse, error) {
-	m := new(WatchListActivityResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *listServiceClient) RestoreList(ctx context.Context, in *RestoreListRequest, opts ...grpc.CallOption) (*RestoreListResponse, error) {
+	out := new(RestoreListResponse)
+	err := c.cc.Invoke(ctx, "/listpb.ListService/RestoreList", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
+}
+
+func (c *listServiceClient) DeleteList(ctx context.Context, in *DeleteListRequest, opts ...grpc.CallOption) (*DeleteListResponse, error) {
+	out := new(DeleteListResponse)
+	err := c.cc.Invoke(ctx, "/listpb.ListService/DeleteList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // ListServiceServer is the server API for ListService service.
@@ -120,11 +117,13 @@ func (x *listServiceWatchListActivityClient) Recv() (*WatchListActivityResponse,
 // for forward compatibility
 type ListServiceServer interface {
 	CreateList(context.Context, *CreateListRequest) (*CreateListResponse, error)
+	GetListByID(context.Context, *GetListByIDRequest) (*GetListByIDResponse, error)
 	GetListsByBoard(context.Context, *GetListsByBoardRequest) (*GetListsByBoardResponse, error)
-	UpdateList(context.Context, *UpdateListRequest) (*UpdateListResponse, error)
-	DeleteList(context.Context, *DeleteListRequest) (*DeleteListResponse, error)
+	UpdateListName(context.Context, *UpdateListNameRequest) (*UpdateListNameResponse, error)
 	MoveListPosition(context.Context, *MoveListPositionRequest) (*MoveListPositionResponse, error)
-	WatchListActivity(*WatchListActivityRequest, ListService_WatchListActivityServer) error
+	ArchiveList(context.Context, *ArchiveListRequest) (*ArchiveListResponse, error)
+	RestoreList(context.Context, *RestoreListRequest) (*RestoreListResponse, error)
+	DeleteList(context.Context, *DeleteListRequest) (*DeleteListResponse, error)
 	mustEmbedUnimplementedListServiceServer()
 }
 
@@ -135,20 +134,26 @@ type UnimplementedListServiceServer struct {
 func (UnimplementedListServiceServer) CreateList(context.Context, *CreateListRequest) (*CreateListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateList not implemented")
 }
+func (UnimplementedListServiceServer) GetListByID(context.Context, *GetListByIDRequest) (*GetListByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetListByID not implemented")
+}
 func (UnimplementedListServiceServer) GetListsByBoard(context.Context, *GetListsByBoardRequest) (*GetListsByBoardResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetListsByBoard not implemented")
 }
-func (UnimplementedListServiceServer) UpdateList(context.Context, *UpdateListRequest) (*UpdateListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateList not implemented")
-}
-func (UnimplementedListServiceServer) DeleteList(context.Context, *DeleteListRequest) (*DeleteListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteList not implemented")
+func (UnimplementedListServiceServer) UpdateListName(context.Context, *UpdateListNameRequest) (*UpdateListNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateListName not implemented")
 }
 func (UnimplementedListServiceServer) MoveListPosition(context.Context, *MoveListPositionRequest) (*MoveListPositionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MoveListPosition not implemented")
 }
-func (UnimplementedListServiceServer) WatchListActivity(*WatchListActivityRequest, ListService_WatchListActivityServer) error {
-	return status.Errorf(codes.Unimplemented, "method WatchListActivity not implemented")
+func (UnimplementedListServiceServer) ArchiveList(context.Context, *ArchiveListRequest) (*ArchiveListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ArchiveList not implemented")
+}
+func (UnimplementedListServiceServer) RestoreList(context.Context, *RestoreListRequest) (*RestoreListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreList not implemented")
+}
+func (UnimplementedListServiceServer) DeleteList(context.Context, *DeleteListRequest) (*DeleteListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteList not implemented")
 }
 func (UnimplementedListServiceServer) mustEmbedUnimplementedListServiceServer() {}
 
@@ -181,6 +186,24 @@ func _ListService_CreateList_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ListService_GetListByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetListByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ListServiceServer).GetListByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/listpb.ListService/GetListByID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ListServiceServer).GetListByID(ctx, req.(*GetListByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ListService_GetListsByBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetListsByBoardRequest)
 	if err := dec(in); err != nil {
@@ -199,38 +222,20 @@ func _ListService_GetListsByBoard_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ListService_UpdateList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateListRequest)
+func _ListService_UpdateListName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateListNameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ListServiceServer).UpdateList(ctx, in)
+		return srv.(ListServiceServer).UpdateListName(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/listpb.ListService/UpdateList",
+		FullMethod: "/listpb.ListService/UpdateListName",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ListServiceServer).UpdateList(ctx, req.(*UpdateListRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ListService_DeleteList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteListRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ListServiceServer).DeleteList(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/listpb.ListService/DeleteList",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ListServiceServer).DeleteList(ctx, req.(*DeleteListRequest))
+		return srv.(ListServiceServer).UpdateListName(ctx, req.(*UpdateListNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -253,25 +258,58 @@ func _ListService_MoveListPosition_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ListService_WatchListActivity_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(WatchListActivityRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _ListService_ArchiveList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ArchiveListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(ListServiceServer).WatchListActivity(m, &listServiceWatchListActivityServer{stream})
+	if interceptor == nil {
+		return srv.(ListServiceServer).ArchiveList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/listpb.ListService/ArchiveList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ListServiceServer).ArchiveList(ctx, req.(*ArchiveListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type ListService_WatchListActivityServer interface {
-	Send(*WatchListActivityResponse) error
-	grpc.ServerStream
+func _ListService_RestoreList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ListServiceServer).RestoreList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/listpb.ListService/RestoreList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ListServiceServer).RestoreList(ctx, req.(*RestoreListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type listServiceWatchListActivityServer struct {
-	grpc.ServerStream
-}
-
-func (x *listServiceWatchListActivityServer) Send(m *WatchListActivityResponse) error {
-	return x.ServerStream.SendMsg(m)
+func _ListService_DeleteList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ListServiceServer).DeleteList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/listpb.ListService/DeleteList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ListServiceServer).DeleteList(ctx, req.(*DeleteListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // ListService_ServiceDesc is the grpc.ServiceDesc for ListService service.
@@ -286,28 +324,34 @@ var ListService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ListService_CreateList_Handler,
 		},
 		{
+			MethodName: "GetListByID",
+			Handler:    _ListService_GetListByID_Handler,
+		},
+		{
 			MethodName: "GetListsByBoard",
 			Handler:    _ListService_GetListsByBoard_Handler,
 		},
 		{
-			MethodName: "UpdateList",
-			Handler:    _ListService_UpdateList_Handler,
-		},
-		{
-			MethodName: "DeleteList",
-			Handler:    _ListService_DeleteList_Handler,
+			MethodName: "UpdateListName",
+			Handler:    _ListService_UpdateListName_Handler,
 		},
 		{
 			MethodName: "MoveListPosition",
 			Handler:    _ListService_MoveListPosition_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "WatchListActivity",
-			Handler:       _ListService_WatchListActivity_Handler,
-			ServerStreams: true,
+			MethodName: "ArchiveList",
+			Handler:    _ListService_ArchiveList_Handler,
+		},
+		{
+			MethodName: "RestoreList",
+			Handler:    _ListService_RestoreList_Handler,
+		},
+		{
+			MethodName: "DeleteList",
+			Handler:    _ListService_DeleteList_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "list.proto",
 }
