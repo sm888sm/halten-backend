@@ -10,9 +10,11 @@ type BoardDTO struct {
 	Visibility string
 	IsArchived bool
 	Labels     []*LabelDTO
-	Members    []*MemberDTO
+	Members    []*BoardMemberDTO
 	Lists      []*ListMetaDTO
 	Cards      []*CardMetaDTO
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type BoardMetaDTO struct {
@@ -25,13 +27,13 @@ type BoardMetaDTO struct {
 }
 
 type LabelDTO struct {
-	Id      uint64
-	BoardID uint
+	ID      uint64
+	BoardID uint64
 	Name    string
 	Color   string
 }
 
-type MemberDTO struct {
+type BoardMemberDTO struct {
 	ID       uint64
 	Username string
 	Fullname string

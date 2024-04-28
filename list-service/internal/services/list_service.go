@@ -53,7 +53,6 @@ func (s *ListService) CreateList(ctx context.Context, req *pb.CreateListRequest)
 }
 
 func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDRequest) (*pb.GetListByIDResponse, error) {
-	// Extract UserID and BoardID from the context
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -64,19 +63,16 @@ func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDReque
 		return nil, errorhandler.NewGrpcInternalError()
 	}
 
-	// Create a GetListsByBoardRequest object
 	getListsReq := &repositories.GetListsByBoardRequest{
 		UserID:  userID,
 		BoardID: boardID,
 	}
 
-	// Call the GetListsByBoard method of the ListRepository interface
 	getListsRes, err := s.listRepo.GetListsByBoard(getListsReq)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert the lists from the repository response to protobuf lists
 	pbLists := make([]*pb.List, len(getListsRes.Lists))
 	for i, list := range getListsRes.Lists {
 		pbLists[i] = &pb.List{
@@ -87,7 +83,6 @@ func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDReque
 		}
 	}
 
-	// Return the response
 	return &pb.GetListByIDResponse{
 		Lists: pbLists,
 	}, nil

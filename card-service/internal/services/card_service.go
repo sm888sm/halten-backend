@@ -103,9 +103,13 @@ func (s *CardService) GetCardsByList(ctx context.Context, req *pb_card.GetCardsB
 }
 
 func (s *CardService) GetCardsByBoard(ctx context.Context, req *pb_card.GetCardsByBoardRequest) (*pb_card.GetCardsByBoardResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
 	repoRes, err := s.cardRepo.GetCardsByBoard(&repositories.GetCardsByBoardRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	})
 
 	if err != nil {

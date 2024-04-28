@@ -80,7 +80,7 @@ func (r *GormBoardRepository) GetBoardByID(req *GetBoardByIDRequest) (*GetBoardB
 		// Map the labels
 		for _, label := range board.Labels {
 			boardDTO.Labels = append(boardDTO.Labels, &dtos.LabelDTO{
-				Id:    label.ID,
+				ID:    label.ID,
 				Name:  label.Name,
 				Color: label.Color,
 			})
@@ -93,15 +93,13 @@ func (r *GormBoardRepository) GetBoardByID(req *GetBoardByIDRequest) (*GetBoardB
 				return errorhandler.NewGrpcInternalError()
 			}
 
-			boardDTO.Members = append(boardDTO.Members, &dtos.MemberDTO{
+			boardDTO.Members = append(boardDTO.Members, &dtos.BoardMemberDTO{
 				ID:       user.ID,
 				Username: user.Username,
 				Fullname: user.Fullname,
 				Role:     member.Role,
 			})
 		}
-
-		// TODO: Map the lists and cards
 
 		return nil
 	})
@@ -110,7 +108,7 @@ func (r *GormBoardRepository) GetBoardByID(req *GetBoardByIDRequest) (*GetBoardB
 		return nil, err
 	}
 
-	return &GetBoardByIDResponse{Board: &board}, nil
+	return &GetBoardByIDResponse{Board: boardDTO}, nil
 }
 
 func (r *GormBoardRepository) GetBoardList(req *GetBoardListRequest) (*GetBoardListResponse, error) {
@@ -182,7 +180,7 @@ func (r *GormBoardRepository) UpdateBoardName(req *UpdateBoardNameRequest) error
 }
 
 func (r *GormBoardRepository) GetBoardMembers(req *GetBoardMembersRequest) (*GetBoardMembersResponse, error) {
-	var boardMemberDTOs []*dtos.MemberDTO
+	var boardMemberDTOs []*dtos.BoardMemberDTO
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var boardMembers []models.BoardMember
@@ -197,7 +195,7 @@ func (r *GormBoardRepository) GetBoardMembers(req *GetBoardMembersRequest) (*Get
 				return errorhandler.NewGrpcInternalError()
 			}
 
-			boardMemberDTOs = append(boardMemberDTOs, &dtos.MemberDTO{
+			boardMemberDTOs = append(boardMemberDTOs, &dtos.BoardMemberDTO{
 				ID:       user.ID,
 				Username: user.Username,
 				Role:     boardMember.Role,

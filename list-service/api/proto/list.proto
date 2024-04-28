@@ -28,7 +28,7 @@ message GetListByIDResponse {
 }
 
 message GetListsByBoardRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message GetListsByBoardResponse {

@@ -18,14 +18,21 @@ import (
 
 var (
 	checkRoleException = map[string]bool{
-		"/proto.BoardService/GetListByID": true,
+		"/proto.BoardService/GetListByID":     true,
+		"/proto.BoardService/GetListsByBoard": true,
 
 		// Add other methods here...
 	}
 
 	checkRole = map[string]string{
-		"/proto.BoardService/UpdateListName": roles.MemberRole,
-
+		"/proto.BoardService/UpdateListName":  roles.MemberRole,
+		"/proto.ListService/CreateList":       roles.MemberRole,
+		"/proto.ListService/GetListsByID":     roles.MemberRole,
+		"/proto.ListService/GetListsByBoard":  roles.MemberRole,
+		"/proto.ListService/MoveListPosition": roles.MemberRole,
+		"/proto.ListService/ArchiveList":      roles.MemberRole,
+		"/proto.ListService/RestoreList":      roles.MemberRole,
+		"/proto.ListService/DeleteList":       roles.AdminRole,
 		// Add other methods here...
 	}
 )
@@ -68,7 +75,7 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 		// Insert userID and boardID to context
 
 		ctx = context.WithValue(ctx, contextkeys.UserIDKey{}, userID)
-		// ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
+		ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
 
 		if _, err := authService.CheckBoardUserRole(ctx, &pb_auth.CheckBoardUserRoleRequest{
 			UserID:       userID,

@@ -6,6 +6,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
+	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
+	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
 
 	external_services "github.com/sm888sm/halten-backend/board-service/external/services"
 
@@ -43,73 +45,70 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 		UserID: userID,
 	}
 
-	// repoReq := &repositories.CreateBoardRequest{
-	// 	Board: board,
-	// }
+	repoReq := &repositories.CreateBoardRequest{
+		Board: board,
+	}
 
-	// repoRes, err := s.boardRepo.CreateBoard(repoReq)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	repoRes, err := s.boardRepo.CreateBoard(repoReq)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO : Create List
+	listService, err := s.services.GetListClient()
+	if err != nil {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	// listService, err := s.services.GetListClient()
-	// if err != nil {
-	// 	return nil, errorhandler.NewGrpcInternalError()
-	// }
+	listReq := &pb_list.CreateListRequest{
+		List: &pb_list.List{
+			BoardID: repoRes.Board.ID,
+			Name:    "Default List",
+		}}
 
-	// listReq := &pb_list.CreateListRequest{
-	// 	BoardID: repoRes.Board.ID,
-	// 	Name:    "Default List",
-	// }
+	listRes, err := listService.CreateList(ctx, listReq)
+	if err != nil {
+		// Delete board through repo
+		err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
+			BoardID: repoRes.Board.ID,
+		})
 
-	// listRes, err := listService.CreateList(ctx, listReq)
-	// if err != nil {
-	// 	// Delete board through repo
-	// 	err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
-	// 		BoardID: repoRes.Board.ID,
-	// 	})
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
 
-	// 	if err != nil {
-	// 		return nil, errorhandler.NewGrpcInternalError()
-	// 	}
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	// 	return nil, errorhandler.NewGrpcInternalError()
-	// }
+	cardService, err := s.services.GetCardClient()
+	if err != nil {
+		// Delete board through repo
+		err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
+			BoardID: repoRes.Board.ID,
+		})
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
 
-	// TODO : Create Card
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	// cardService, err := s.services.GetCardClient()
-	// if err != nil {
-	// 	// Delete board through repo
-	// 	err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
-	// 		BoardID: repoRes.Board.ID,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, errorhandler.NewGrpcInternalError()
-	// 	}
+	cardReq := &pb_card.CreateCardRequest{
+		ListID: listRes.List.ListID,
+		Name:   "Default Card",
+	}
 
-	// 	return nil, errorhandler.NewGrpcInternalError()
-	// }
+	_, err = cardService.CreateCard(ctx, cardReq)
+	if err != nil {
+		// Delete board through repo
+		err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
+			BoardID: repoRes.Board.ID,
+		})
+		if err != nil {
+			return nil, errorhandler.NewGrpcInternalError()
+		}
 
-	// cardReq := &pb_card.CreateCardRequest{
-	// 	ListID: list.ID,
-	// 	Name:   "Default Card",
-	// }
-
-	// _, err = cardService.CreateCard(ctx, cardReq)
-	// if err != nil {
-	// 	// Delete board through repo
-	// 	err = s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
-	// 		BoardID: repoRes.Board.ID,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, errorhandler.NewGrpcInternalError()
-	// 	}
-
-	// 	return nil, err
-	// }
+		return nil, err
+	}
 
 	return &pb_board.CreateBoardResponse{
 		BoardID: board.ID,
@@ -118,21 +117,43 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 }
 
 func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardByIDRequest) (*pb_board.GetBoardByIDResponse, error) {
-	// Extract the user ID from the context
+	// Extract the board ID from the context
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
 	// Call the repository function
 	repoRes, err := s.boardRepo.GetBoardByID(&repositories.GetBoardByIDRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO get board members from user service
+	listService, err := s.services.GetListClient()
+	if err != nil {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	// TODO get cards from card service
+	cardService, err := s.services.GetCardClient()
+	if err != nil {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	// TODO get lists from list service
+	listReq := &pb_list.GetListsByBoardRequest{}
+
+	cardReq := &pb_card.GetCardsByBoardRequest{}
+
+	listRes, err := listService.GetListsByBoard(ctx, listReq)
+	if err != nil {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
+	cardRes, err := cardService.GetCardsByBoard(ctx, cardReq)
+	if err != nil {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
 	// Convert the board model to a protobuf message
 
@@ -142,12 +163,12 @@ func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardB
 		UserID:     board.ID,
 		Name:       board.Name,
 		Visibility: board.Visibility,
-		// Members:    convertPermissionsToProto(board.Members),
-		// Lists:       convertListsToProto(board.Lists),
-		// Cards:       convertCardsToProto(board.Cards),
-		Labels:    convertLabelsToProto(repoRes.Board.Labels),
-		CreatedAt: timestamppb.New(repoRes.Board.CreatedAt),
-		UpdatedAt: timestamppb.New(repoRes.Board.UpdatedAt),
+		Members:    convertMembersToProto(board.Members),
+		Lists:      convertListsToProto(listRes.Lists),
+		Cards:      convertCardsToProto(cardRes.Cards),
+		Labels:     convertLabelsToProto(board.Labels),
+		CreatedAt:  timestamppb.New(repoRes.Board.CreatedAt),
+		UpdatedAt:  timestamppb.New(repoRes.Board.UpdatedAt),
 	}
 
 	// Return the response
@@ -192,8 +213,13 @@ func (s *BoardService) GetBoardList(ctx context.Context, req *pb_board.GetBoardL
 	}, nil
 }
 func (s *BoardService) GetBoardMembers(ctx context.Context, req *pb_board.GetBoardMembersRequest) (*pb_board.GetBoardMembersResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	repoReq := &repositories.GetBoardMembersRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	}
 
 	repoRes, err := s.boardRepo.GetBoardMembers(repoReq)
@@ -256,8 +282,12 @@ func (s *BoardService) GetArchivedBoardList(ctx context.Context, req *pb_board.G
 }
 
 func (s *BoardService) UpdateBoardName(ctx context.Context, req *pb_board.UpdateBoardNameRequest) (*pb_board.UpdateBoardNameResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
-	err := s.boardRepo.UpdateBoardName(&repositories.UpdateBoardNameRequest{BoardID: req.BoardID, Name: req.Name})
+	err := s.boardRepo.UpdateBoardName(&repositories.UpdateBoardNameRequest{BoardID: boardID, Name: req.Name})
 	if err != nil {
 		return nil, err
 	}
@@ -267,8 +297,12 @@ func (s *BoardService) UpdateBoardName(ctx context.Context, req *pb_board.Update
 }
 
 func (s *BoardService) AddBoardUsers(ctx context.Context, req *pb_board.AddBoardUsersRequest) (*pb_board.AddBoardUsersResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Extract the board ID and user IDs from the request
-	boardID := req.BoardID
 	userIDs := req.UserIDs
 
 	// Call the repository function to add the users to the board
@@ -287,8 +321,12 @@ func (s *BoardService) AddBoardUsers(ctx context.Context, req *pb_board.AddBoard
 }
 
 func (s *BoardService) RemoveBoardUsers(ctx context.Context, req *pb_board.RemoveBoardUsersRequest) (*pb_board.RemoveBoardUsersResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Extract the board ID and user IDs from the request
-	boardID := req.BoardID
 	userIDs := req.UserIDs
 
 	// Call the repository function to remove the users from the board
@@ -307,10 +345,20 @@ func (s *BoardService) RemoveBoardUsers(ctx context.Context, req *pb_board.Remov
 }
 
 func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.AssignBoardUserRoleRequest) (*pb_board.AssignBoardUserRoleResponse, error) {
+	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Call the repository function to assign the user role to the board
 	err := s.boardRepo.AssignBoardUserRole(&repositories.AssignBoardUserRoleRequest{
-		BoardID: req.BoardID,
-		UserID:  req.UserID,
+		BoardID: boardID,
+		UserID:  userID,
 		Role:    req.Role,
 	})
 	if err != nil {
@@ -324,9 +372,13 @@ func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.As
 }
 
 func (s *BoardService) ChangeBoardOwner(ctx context.Context, req *pb_board.ChangeBoardOwnerRequest) (*pb_board.ChangeBoardOwnerResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
 
 	err := s.boardRepo.ChangeBoardOwner(&repositories.ChangeBoardOwnerRequest{
-		BoardID:    req.BoardID,
+		BoardID:    boardID,
 		NewOwnerID: req.NewOwnerID,
 	})
 	if err != nil {
@@ -340,9 +392,14 @@ func (s *BoardService) ChangeBoardOwner(ctx context.Context, req *pb_board.Chang
 }
 
 func (s *BoardService) ChangeBoardVisibility(ctx context.Context, req *pb_board.ChangeBoardVisibilityRequest) (*pb_board.ChangeBoardVisibilityResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Call the repository function to change the visibility of the board
 	err := s.boardRepo.ChangeBoardVisibility(&repositories.ChangeBoardVisibilityRequest{
-		BoardID:    req.BoardID,
+		BoardID:    boardID,
 		Visibility: req.Visibility,
 	})
 	if err != nil {
@@ -356,8 +413,13 @@ func (s *BoardService) ChangeBoardVisibility(ctx context.Context, req *pb_board.
 }
 
 func (s *BoardService) AddLabel(ctx context.Context, req *pb_board.AddLabelRequest) (*pb_board.AddLabelResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	label, err := s.boardRepo.AddLabel(&repositories.AddLabelRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 		Color:   req.Color,
 		Name:    req.Name,
 	})
@@ -376,8 +438,13 @@ func (s *BoardService) AddLabel(ctx context.Context, req *pb_board.AddLabelReque
 }
 
 func (s *BoardService) RemoveLabel(ctx context.Context, req *pb_board.RemoveLabelRequest) (*pb_board.RemoveLabelResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	err := s.boardRepo.RemoveLabel(&repositories.RemoveLabelRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 		LabelID: req.LabelID,
 	})
 	if err != nil {
@@ -391,9 +458,14 @@ func (s *BoardService) RemoveLabel(ctx context.Context, req *pb_board.RemoveLabe
 }
 
 func (s *BoardService) ArchiveBoard(ctx context.Context, req *pb_board.ArchiveBoardRequest) (*pb_board.ArchiveBoardResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Call the repository function to archive the board
 	err := s.boardRepo.ArchiveBoard(&repositories.ArchiveBoardRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	})
 	if err != nil {
 		return nil, err
@@ -406,9 +478,14 @@ func (s *BoardService) ArchiveBoard(ctx context.Context, req *pb_board.ArchiveBo
 }
 
 func (s *BoardService) RestoreBoard(ctx context.Context, req *pb_board.RestoreBoardRequest) (*pb_board.RestoreBoardResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Call the repository function to restore the board
 	err := s.boardRepo.RestoreBoard(&repositories.RestoreBoardRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	})
 	if err != nil {
 		return nil, err
@@ -421,9 +498,14 @@ func (s *BoardService) RestoreBoard(ctx context.Context, req *pb_board.RestoreBo
 }
 
 func (s *BoardService) DeleteBoard(ctx context.Context, req *pb_board.DeleteBoardRequest) (*pb_board.DeleteBoardResponse, error) {
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandler.NewGrpcInternalError()
+	}
+
 	// Call the repository function
 	err := s.boardRepo.DeleteBoard(&repositories.DeleteBoardRequest{
-		BoardID: req.BoardID,
+		BoardID: boardID,
 	})
 	if err != nil {
 		return nil, err
@@ -433,23 +515,4 @@ func (s *BoardService) DeleteBoard(ctx context.Context, req *pb_board.DeleteBoar
 	return &pb_board.DeleteBoardResponse{
 		Message: "Board successfully deleted",
 	}, nil
-}
-
-// Helpers
-
-func convertLabelsToProto(labels []models.Label) []*pb_board.Label {
-	var labelsProto []*pb_board.Label
-
-	for _, label := range labels {
-		labelProto := &pb_board.Label{
-			LabelID: label.ID,
-			Name:    label.Name,
-			Color:   label.Color,
-			BoardID: label.BoardID,
-		}
-
-		labelsProto = append(labelsProto, labelProto)
-	}
-
-	return labelsProto
 }

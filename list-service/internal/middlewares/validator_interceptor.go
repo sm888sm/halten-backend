@@ -2,11 +2,10 @@ package middlewares
 
 import (
 	"context"
-	"errors"
 
-	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
+	"github.com/sm888sm/halten-backend/common/constants/fielderrors"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
+	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
@@ -21,57 +20,36 @@ func NewValidatorInterceptor(db *gorm.DB) *ValidatorInterceptor {
 
 func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	switch info.FullMethod {
-	// Board Service
-	case "/proto.BoardService/CreateBoard":
-		if err := validateCreateBoardRequest(req.(*pb_board.CreateBoardRequest)); err != nil {
+	case "/proto.ListService/CreateList":
+		if err := validateCreateListRequest(ctx, req.(*pb_list.CreateListRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/GetBoardByID":
-		if err := validateGetBoardByIDRequest(req.(*pb_board.GetBoardByIDRequest)); err != nil {
+	case "/proto.ListService/GetListByID":
+		if err := validateGetListByIDRequest(ctx, req.(*pb_list.GetListByIDRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/GetBoardList":
-		if err := validateGetBoardListRequest(req.(*pb_board.GetBoardListRequest)); err != nil {
+	case "/proto.ListService/GetListsByBoard":
+		if err := validateGetListsByBoardRequest(ctx, req.(*pb_list.GetListsByBoardRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/GetBoardMembers":
-		if err := validateGetBoardMembersRequest(req.(*pb_board.GetBoardMembersRequest)); err != nil {
+	case "/proto.ListService/UpdateListName":
+		if err := validateUpdateListNameRequest(ctx, req.(*pb_list.UpdateListNameRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/UpdateBoardName":
-		if err := validateUpdateBoardNameRequest(req.(*pb_board.UpdateBoardNameRequest)); err != nil {
+	case "/proto.ListService/MoveListPosition":
+		if err := validateMoveListPositionRequest(ctx, req.(*pb_list.MoveListPositionRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/AddBoardUsers":
-		if err := validateAddBoardUsersRequest(req.(*pb_board.AddBoardUsersRequest)); err != nil {
+	case "/proto.ListService/ArchiveList":
+		if err := validateArchiveListRequest(ctx, req.(*pb_list.ArchiveListRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/RemoveBoardUsers":
-		if err := validateRemoveBoardUsersRequest(req.(*pb_board.RemoveBoardUsersRequest)); err != nil {
+	case "/proto.ListService/RestoreList":
+		if err := validateRestoreListRequest(ctx, req.(*pb_list.RestoreListRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/AssignBoardUserRole":
-		if err := validateAssignBoardUserRoleRequest(req.(*pb_board.AssignBoardUserRoleRequest)); err != nil {
-			return nil, err
-		}
-	case "/proto.BoardService/ChangeBoardOwner":
-		if err := validateChangeBoardOwnerRequest(req.(*pb_board.ChangeBoardOwnerRequest)); err != nil {
-			return nil, err
-		}
-	case "/proto.BoardService/GetArchivedBoardList":
-		if err := validateGetArchivedBoardListRequest(req.(*pb_board.GetArchivedBoardListRequest)); err != nil {
-			return nil, err
-		}
-	case "/proto.BoardService/RestoreBoard":
-		if err := validateRestoreBoardRequest(req.(*pb_board.RestoreBoardRequest)); err != nil {
-			return nil, err
-		}
-	case "/proto.BoardService/ArchiveBoard":
-		if err := validateArchiveBoardRequest(req.(*pb_board.ArchiveBoardRequest)); err != nil {
-			return nil, err
-		}
-	case "/proto.BoardService/DeleteBoard":
-		if err := validateDeleteBoardRequest(req.(*pb_board.DeleteBoardRequest)); err != nil {
+	case "/proto.ListService/DeleteList":
+		if err := validateDeleteListRequest(ctx, req.(*pb_list.DeleteListRequest)); err != nil {
 			return nil, err
 		}
 	}
@@ -79,318 +57,96 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 	return handler(ctx, req)
 }
 
-// Board Service
+func validateCreateListRequest(ctx context.Context, req *pb_list.CreateListRequest) *errorhandler.APIError {
+	fieldErrors, apiErr := validateUserAndBoardID(ctx)
+	if apiErr != nil {
+		return apiErr
+	}
 
-func validateCreateBoardRequest(req *pb_board.CreateBoardRequest) error {
-	var fieldErrors []errorhandler.FieldError
+	if req.List.Name == "" {
+		fieldErrors["Name"] = errorhandler.FieldError{
+			Field:   "name",
+			Message: "List name cannot be empty",
+		}
+	}
 
-	if req == nil {
-		return errors.New("request cannot be nil")
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+}
+
+func validateGetListByIDRequest(ctx context.Context, req *pb_list.GetListByIDRequest) *errorhandler.APIError {
+	fieldErrors, apiErr := validateUserAndBoardID(ctx)
+	if apiErr != nil {
+		return apiErr
+	}
+
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+}
+
+func validateGetListsByBoardRequest(ctx context.Context, req *pb_list.GetListsByBoardRequest) *errorhandler.APIError {
+	fieldErrors, apiErr := validateUserAndBoardID(ctx)
+	if apiErr != nil {
+		return apiErr
+	}
+
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+}
+
+func validateUpdateListNameRequest(ctx context.Context, req *pb_list.UpdateListNameRequest) *errorhandler.APIError {
+	fieldErrors, err := validateUserAndBoardID(ctx)
+	if err != nil {
+		return err
 	}
 
 	if req.Name == "" {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "name",
-			Message: "Board name cannot be empty",
-		})
+		fieldErrors["Name"] = errorhandler.FieldError{
+			Code:    fielderrors.ErrRequired,
+			Message: "Name is required",
+			Field:   "Name",
+		}
 	}
 
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardByIDRequest(req *pb_board.GetBoardByIDRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
+func validateMoveListPositionRequest(ctx context.Context, req *pb_list.MoveListPositionRequest) *errorhandler.APIError {
+	fieldErrors, err := validateUserAndBoardID(ctx)
+	if err != nil {
+		return err
 	}
 
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be empty",
-		})
+	if req.NewPosition == 0 {
+		fieldErrors["NewPosition"] = errorhandler.FieldError{
+			Field:   "NewPosition",
+			Message: "New position cannot be zero",
+		}
 	}
 
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardListRequest(req *pb_board.GetBoardListRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
+func validateArchiveListRequest(ctx context.Context, req *pb_list.ArchiveListRequest) *errorhandler.APIError {
+	fieldErrors, err := validateUserAndBoardID(ctx)
+	if err != nil {
+		return err
 	}
 
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardMembersRequest(req *pb_board.GetBoardMembersRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
+func validateRestoreListRequest(ctx context.Context, req *pb_list.RestoreListRequest) *errorhandler.APIError {
+	fieldErrors, err := validateUserAndBoardID(ctx)
+	if err != nil {
+		return err
 	}
 
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
 }
 
-func validateUpdateBoardNameRequest(req *pb_board.UpdateBoardNameRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
+func validateDeleteListRequest(ctx context.Context, req *pb_list.DeleteListRequest) *errorhandler.APIError {
+	fieldErrors, err := validateUserAndBoardID(ctx)
+	if err != nil {
+		return err
 	}
 
-	if req.Name == "" {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "name",
-			Message: "Board name cannot be empty",
-		})
-	}
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateAddBoardUsersRequest(req *pb_board.AddBoardUsersRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	if len(req.UserIDs) == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userIDs",
-			Message: "User IDs cannot be empty",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateRemoveBoardUsersRequest(req *pb_board.RemoveBoardUsersRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	if len(req.UserIDs) == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userIDs",
-			Message: "User IDs cannot be empty",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateAssignBoardUserRoleRequest(req *pb_board.AssignBoardUserRoleRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	if len(req.UserIDs) == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "userIDs",
-			Message: "User IDs cannot be empty",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateChangeBoardOwnerRequest(req *pb_board.ChangeBoardOwnerRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	if req.NewOwnerID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "newOwnerID",
-			Message: "New owner ID cannot be zero",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateGetArchivedBoardListRequest(req *pb_board.GetArchivedBoardListRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateRestoreBoardRequest(req *pb_board.RestoreBoardRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateArchiveBoardRequest(req *pb_board.ArchiveBoardRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
-}
-
-func validateDeleteBoardRequest(req *pb_board.DeleteBoardRequest) error {
-	var fieldErrors []errorhandler.FieldError
-
-	if req == nil {
-		return errors.New("request cannot be nil")
-	}
-
-	if req.BoardID == 0 {
-		fieldErrors = append(fieldErrors, errorhandler.FieldError{
-			Field:   "boardID",
-			Message: "Board ID cannot be zero",
-		})
-	}
-
-	// Add more validation rules as needed
-
-	if len(fieldErrors) > 0 {
-		return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid validation", fieldErrors...)
-	}
-
-	return nil
+	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
 }

@@ -52,6 +52,7 @@ func NewAuthInterceptor(db *gorm.DB, svc *external_services.Services) *AuthInter
 }
 
 func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+
 	_, isException := checkRoleException[info.FullMethod]
 	if !isException {
 
@@ -80,7 +81,7 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 		// Insert userID and boardID to context
 
 		ctx = context.WithValue(ctx, contextkeys.UserIDKey{}, userID)
-		// ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
+		ctx = context.WithValue(ctx, contextkeys.BoardIDKey{}, boardID)
 
 		if _, err := authService.CheckBoardUserRole(ctx, &pb_auth.CheckBoardUserRoleRequest{
 			UserID:       userID,

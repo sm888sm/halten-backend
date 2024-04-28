@@ -20,7 +20,7 @@ message Board {
     string visibility = 4;
     repeated BoardMember members = 5;
     repeated List lists = 6;
-    repeated Card cards = 7;
+    repeated CardMeta cards = 7;
     repeated Label labels = 8;
     google.protobuf.Timestamp created_at = 9;
     google.protobuf.Timestamp updated_at = 10;
@@ -101,7 +101,7 @@ message BoardMember {
 
 // Request and Response Messages
 message CreateBoardRequest {
-    string name = 3;
+    string name = 1;
 }
 
 message CreateBoardResponse {
@@ -110,7 +110,7 @@ message CreateBoardResponse {
 }
 
 message GetBoardByIDRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message GetBoardByIDResponse {
@@ -129,7 +129,7 @@ message GetBoardListResponse {
 }
 
 message GetBoardMembersRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message GetBoardMembersResponse {
@@ -137,8 +137,8 @@ message GetBoardMembersResponse {
 }
 
 message UpdateBoardNameRequest {
-    uint64 boardID = 1;
-    string name = 2;
+    // uint64 boardID = 1;
+    string name = 1;
 }
 
 message UpdateBoardNameResponse {
@@ -146,9 +146,9 @@ message UpdateBoardNameResponse {
 }
 
 message AddBoardUsersRequest {
-    uint64 boardID = 1;
-    repeated uint64 userIDs = 2;
-    string role = 3;
+    // uint64 boardID = 1;
+    repeated uint64 userIDs = 1;
+    string role = 2;
 }
 
 message AddBoardUsersResponse {
@@ -156,8 +156,8 @@ message AddBoardUsersResponse {
 }
 
 message RemoveBoardUsersRequest {
-    uint64 boardID = 1;
-    repeated uint64 userIDs = 2;
+    // uint64 boardID = 1;
+    repeated uint64 userIDs = 1;
 }
 
 message RemoveBoardUsersResponse {
@@ -165,10 +165,9 @@ message RemoveBoardUsersResponse {
 }
 
 message AssignBoardUserRoleRequest {
-    uint64 boardID = 1;
-    uint64 userID = 2;
-    repeated uint64 userIDs = 3;
-    string role = 4;
+    // uint64 boardID = 1;
+    repeated uint64 userIDs = 1;
+    string role = 2;
 }
 
 message AssignBoardUserRoleResponse {
@@ -176,8 +175,8 @@ message AssignBoardUserRoleResponse {
 }
 
 message ChangeBoardOwnerRequest {
-    uint64 boardID = 1;
-    uint64 newOwnerID = 2;
+    // uint64 boardID = 1;
+    uint64 newOwnerID = 1;
 }
 
 message ChangeBoardOwnerResponse {
@@ -185,8 +184,8 @@ message ChangeBoardOwnerResponse {
 }
 
 message ChangeBoardVisibilityRequest {
-    uint64 boardID = 1;
-    string visibility = 2;
+    // uint64 boardID = 1;
+    string visibility = 1;
 }
 
 message ChangeBoardVisibilityResponse {
@@ -205,7 +204,7 @@ message GetArchivedBoardListResponse {
 }
 
 message RestoreBoardRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message RestoreBoardResponse {
@@ -213,9 +212,9 @@ message RestoreBoardResponse {
 }
 
 message AddLabelRequest {
-    uint64 boardID = 1;
-    string name = 2;
-    string color = 3;
+    // uint64 boardID = 1;
+    string name = 1;
+    string color = 2;
 }
 
 message AddLabelResponse {
@@ -223,8 +222,8 @@ message AddLabelResponse {
 }
 
 message RemoveLabelRequest {
-    uint64 boardID = 1;
-    uint64 labelID = 2;
+    // uint64 boardID = 1;
+    uint64 labelID = 1;
 }
 
 message RemoveLabelResponse {
@@ -232,7 +231,7 @@ message RemoveLabelResponse {
 }
 
 message ArchiveBoardRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message ArchiveBoardResponse {
@@ -240,7 +239,7 @@ message ArchiveBoardResponse {
 }
 
 message DeleteBoardRequest {
-    uint64 boardID = 1;
+    // uint64 boardID = 1;
 }
 
 message DeleteBoardResponse {

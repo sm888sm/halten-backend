@@ -19,7 +19,7 @@ type GetBoardByIDRequest struct {
 }
 
 type GetBoardByIDResponse struct {
-	Board *models.Board
+	Board internal_models.BoardDTO
 }
 
 type GetBoardListRequest struct {
@@ -38,7 +38,7 @@ type GetBoardMembersRequest struct {
 }
 
 type GetBoardMembersResponse struct {
-	Members []*internal_models.MemberDTO
+	Members []*internal_models.BoardMemberDTO
 }
 
 type UpdateBoardNameRequest struct {

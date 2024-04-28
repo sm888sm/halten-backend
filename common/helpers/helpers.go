@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 
 	"github.com/sm888sm/halten-backend/common/errorhandler"
@@ -12,17 +11,17 @@ import (
 func ExtractUserIDFromContext(ctx context.Context) (uint64, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return 0, errorhandler.NewAPIError(http.StatusInternalServerError, "missing context metadata")
+		return 0, errorhandler.NewGrpcInternalError()
 	}
 
 	userIDStrs, ok := md["userID"]
 	if !ok || len(userIDStrs) != 1 {
-		return 0, errorhandler.NewAPIError(http.StatusInternalServerError, "missing userID in context metadata")
+		return 0, errorhandler.NewGrpcInternalError()
 	}
 
 	userID, err := strconv.ParseUint(userIDStrs[0], 10, 64)
 	if err != nil {
-		return 0, errorhandler.NewAPIError(http.StatusInternalServerError, "invalid userID in context metadata")
+		return 0, errorhandler.NewGrpcInternalError()
 	}
 
 	return userID, nil
