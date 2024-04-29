@@ -10,7 +10,7 @@ import (
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roles"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"github.com/sm888sm/halten-backend/common/helpers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -61,12 +61,12 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 
 		requiredRole, ok := checkRole[info.FullMethod]
 		if !ok {
-			return nil, status.Errorf(codes.Unavailable, errorhandler.NewAPIError(httpcodes.ErrForbidden, "Invalid method").Error())
+			return nil, status.Errorf(codes.Unavailable, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Invalid method").Error())
 		}
 
 		authService, err := v.svc.GetAuthClient()
 		if err != nil {
-			return nil, errorhandler.NewGrpcBadRequestError()
+			return nil, errorhandlers.NewGrpcBadRequestError()
 		}
 
 		// Extract userID and boardID from meta

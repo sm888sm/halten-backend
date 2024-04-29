@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
-	"github.com/sm888sm/halten-backend/common/responsehandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
+	"github.com/sm888sm/halten-backend/common/responsehandlers"
 	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 )
 
@@ -23,32 +23,32 @@ func NewBoardHandler(services *external_services.Services) *BoardHandler {
 	return &BoardHandler{services: services}
 }
 
-type CreateBoardRequest struct {
-	Name string `json:"name" binding:"required"`
-}
-
 /*
 ********************
 * No Authorization *
 ********************
  */
 
+type CreateBoardRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
 func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	var req CreateBoardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -58,52 +58,53 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	grpcReq := &pb_board.CreateBoardRequest{Name: req.Name} // Convert the HTTP request to the gRPC request
 	res, err := boardClient.CreateBoard(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, res)
+	responsehandlers.Success(c, http.StatusOK, "Board created successfully", res)
 }
 
 type GetBoardByIDUri struct {
-	BoardID uint64 `json:"boardID" binding:"required"`
+	BoardID uint64 `uri:"boardID" binding:"required"`
 }
 
 func (h *BoardHandler) GetBoardByID(c *gin.Context) {
-	var req GetBoardByIDUri
-	if err := c.ShouldBindUri(&req); err != nil {
-		responsehandler.Error(c, http.StatusBadRequest, "Invalid board ID", []responsehandler.ErrorResponse{{Message: err.Error()}})
+	var uri GetBoardByIDUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, errorhandlers.NewHttpInternalError())
 		return
 	}
 
-	if err := h.CheckVisibility(c.Request.Context(), userID, req.BoardID); err != nil {
-		errorhandler.HandleError(c, err)
+	if err := h.CheckVisibility(c.Request.Context(), userID, uri.BoardID); err != nil {
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardService, err := h.services.GetBoardClient()
 	if err != nil {
-		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		errorhandlers.HandleError(c, errorhandlers.NewHttpInternalError())
 		return
 	}
 
-	ctx := c.Request.Context()
+	md := metadata.Pairs("boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
 	grpcReq := &pb_board.GetBoardByIDRequest{} // Convert the HTTP request to the gRPC request
 
 	resp, err := boardService.GetBoardByID(ctx, grpcReq)
 	if err != nil {
-		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board retrieved successfully", resp)
+	responsehandlers.Success(c, http.StatusOK, "Board retrieved successfully", resp)
 }
 
 type GetBoardListQuery struct {
@@ -114,19 +115,19 @@ type GetBoardListQuery struct {
 func (h *BoardHandler) GetBoardList(c *gin.Context) {
 	var query GetBoardListQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request query"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -140,53 +141,53 @@ func (h *BoardHandler) GetBoardList(c *gin.Context) {
 
 	res, err := boardClient.GetBoardList(ctx, req)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.SuccessWithPagination(c, http.StatusOK, "Board list retrieved successfully", res.Boards, res.Pagination)
+	responsehandlers.SuccessWithPagination(c, http.StatusOK, "Board list retrieved successfully", res.Boards, res.Pagination)
 }
 
-type GetBoardMembersQuery struct {
+type GetBoardMembersUri struct {
 	BoardID uint64 `json:"boardID" binding:"required"`
 }
 
 func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
-	var query GetBoardMembersQuery
-	if err := c.ShouldBindQuery(&query); err != nil {
-		errorhandler.HandleError(c, err)
+	var uri GetBoardMembersUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	if err := h.CheckVisibility(c.Request.Context(), userID, query.BoardID); err != nil {
-		errorhandler.HandleError(c, err)
+	if err := h.CheckVisibility(c.Request.Context(), userID, uri.BoardID); err != nil {
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	req := &pb_board.GetBoardMembersRequest{}
 
-	md := metadata.Pairs("boardID", strconv.FormatUint(query.BoardID, 10))
+	md := metadata.Pairs("boardID", strconv.FormatUint(uri.BoardID, 10))
 	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
 	res, err := boardClient.GetBoardMembers(ctx, req)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board members retrieved successfully", res)
+	responsehandlers.Success(c, http.StatusOK, "Board members retrieved successfully", res)
 }
 
 type GetArchivedBoardListQuery struct {
@@ -197,19 +198,19 @@ type GetArchivedBoardListQuery struct {
 func (h *BoardHandler) GetArchivedBoardList(c *gin.Context) {
 	var query GetArchivedBoardListQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request query"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -223,11 +224,11 @@ func (h *BoardHandler) GetArchivedBoardList(c *gin.Context) {
 
 	res, err := boardClient.GetArchivedBoardList(ctx, req)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.SuccessWithPagination(c, http.StatusOK, "Archived board list retrieved successfully", res.Boards, res.Pagination)
+	responsehandlers.SuccessWithPagination(c, http.StatusOK, "Archived board list retrieved successfully", res.Boards, res.Pagination)
 }
 
 /*
@@ -247,25 +248,25 @@ type UpdateBoardNameBody struct {
 func (h *BoardHandler) UpdateBoardName(c *gin.Context) {
 	var uri UpdateBoardNameUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body UpdateBoardNameBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -276,11 +277,11 @@ func (h *BoardHandler) UpdateBoardName(c *gin.Context) {
 
 	res, err := boardClient.UpdateBoardName(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board name updated successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type AddBoardUsersUri struct {
@@ -295,26 +296,26 @@ type AddBoardUsersBody struct {
 func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
 	var uri AddBoardUsersUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body AddBoardUsersBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	// Get the user ID
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -331,11 +332,11 @@ func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
 	// Use the new context with metadata
 	res, err := boardClient.AddBoardUsers(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Users added to board successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type RemoveBoardUsersUri struct {
@@ -349,26 +350,26 @@ type RemoveBoardUsersBody struct {
 func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
 	var uri RemoveBoardUsersUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body RemoveBoardUsersBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	// Get the user ID
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -384,11 +385,11 @@ func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
 	// Use the new context with metadata
 	res, err := boardClient.RemoveBoardUsers(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Users removed from board successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type AssignBoardUsersRoleUri struct {
@@ -403,25 +404,25 @@ type AssignBoardUsersRoleBody struct {
 func (h *BoardHandler) AssignBoardUsersRole(c *gin.Context) {
 	var uri AssignBoardUsersRoleUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body AssignBoardUsersRoleBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -435,11 +436,11 @@ func (h *BoardHandler) AssignBoardUsersRole(c *gin.Context) {
 
 	res, err := boardClient.AssignBoardUsersRole(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "User roles assigned successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type ChangeBoardOwnerUri struct {
@@ -453,25 +454,25 @@ type ChangeBoardOwnerBody struct {
 func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
 	var uri ChangeBoardOwnerUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body ChangeBoardOwnerBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -482,11 +483,11 @@ func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
 
 	res, err := boardClient.ChangeBoardOwner(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board owner changed successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type ChangeBoardVisibilityUri struct {
@@ -500,25 +501,25 @@ type ChangeBoardVisibilityBody struct {
 func (h *BoardHandler) ChangeBoardVisibility(c *gin.Context) {
 	var uri ChangeBoardVisibilityUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body ChangeBoardVisibilityBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -529,11 +530,11 @@ func (h *BoardHandler) ChangeBoardVisibility(c *gin.Context) {
 
 	res, err := boardClient.ChangeBoardVisibility(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board visibility changed successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type AddLabelUri struct {
@@ -548,25 +549,25 @@ type AddLabelBody struct {
 func (h *BoardHandler) AddLabel(c *gin.Context) {
 	var uri AddLabelUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body AddLabelBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -580,11 +581,11 @@ func (h *BoardHandler) AddLabel(c *gin.Context) {
 
 	res, err := boardClient.AddLabel(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Label added successfully", res)
+	responsehandlers.Success(c, http.StatusOK, "Label added successfully", res.Label)
 }
 
 type RemoveLabelUri struct {
@@ -598,25 +599,25 @@ type RemoveLabelBody struct {
 func (h *BoardHandler) RemoveLabel(c *gin.Context) {
 	var uri RemoveLabelUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	var body RemoveLabelBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -627,11 +628,11 @@ func (h *BoardHandler) RemoveLabel(c *gin.Context) {
 
 	res, err := boardClient.RemoveLabel(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Label removed successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type ArchiveBoardUri struct {
@@ -641,19 +642,19 @@ type ArchiveBoardUri struct {
 func (h *BoardHandler) ArchiveBoard(c *gin.Context) {
 	var uri ArchiveBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -664,11 +665,11 @@ func (h *BoardHandler) ArchiveBoard(c *gin.Context) {
 
 	res, err := boardClient.ArchiveBoard(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board archived status updated successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type RestoreBoardUri struct {
@@ -678,19 +679,19 @@ type RestoreBoardUri struct {
 func (h *BoardHandler) RestoreBoard(c *gin.Context) {
 	var uri RestoreBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -701,11 +702,11 @@ func (h *BoardHandler) RestoreBoard(c *gin.Context) {
 
 	res, err := boardClient.RestoreBoard(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board restored successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 type DeleteBoardUri struct {
@@ -715,19 +716,19 @@ type DeleteBoardUri struct {
 func (h *BoardHandler) DeleteBoard(c *gin.Context) {
 	var uri DeleteBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
 	userID, err := getUserID(c)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
 	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
@@ -738,11 +739,11 @@ func (h *BoardHandler) DeleteBoard(c *gin.Context) {
 
 	res, err := boardClient.DeleteBoard(ctx, grpcReq)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board deleted successfully", res)
+	responsehandlers.Success(c, http.StatusOK, res.Message, nil)
 }
 
 // Helpers

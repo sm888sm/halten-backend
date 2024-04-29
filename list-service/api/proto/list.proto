@@ -46,7 +46,7 @@ message UpdateListNameResponse {
 
 message MoveListPositionRequest {
     uint64 listID = 1;
-    uint64 new_position = 2;
+    int64 position = 2;
 }
 
 message MoveListPositionResponse {

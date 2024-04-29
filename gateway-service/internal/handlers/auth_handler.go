@@ -7,8 +7,8 @@ import (
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
-	"github.com/sm888sm/halten-backend/common/responsehandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
+	"github.com/sm888sm/halten-backend/common/responsehandlers"
 )
 
 type AuthHandler struct {
@@ -26,13 +26,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Password string `json:"password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
+		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
 
 	authClient, err := h.services.GetAuthClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return
 	}
 
@@ -43,11 +43,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	response, err := authClient.Login(ctx, &loginRequest)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusCreated, "User logged in successfully", response)
+	responsehandlers.Success(c, http.StatusCreated, "User logged in successfully", response)
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
@@ -56,13 +56,13 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		RefreshToken string `json:"refreshToken"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
+		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
 
 	authClient, err := h.services.GetAuthClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	response, err := authClient.RefreshToken(ctx, &refreshTokenRequest)
 	if err != nil {
-		errorhandler.HandleError(c, err)
+		errorhandlers.HandleError(c, err)
 		return
 	}
 

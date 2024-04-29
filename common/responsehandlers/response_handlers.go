@@ -1,4 +1,4 @@
-package responsehandler
+package responsehandlers
 
 import (
 	"github.com/gin-gonic/gin"
@@ -8,12 +8,6 @@ type Meta struct {
 	Status     int         `json:"status"`
 	Message    string      `json:"message"`
 	Pagination interface{} `json:"pagination,omitempty"`
-}
-
-type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Field   string `json:"field,omitempty"`
 }
 
 type Pagination struct {
@@ -42,15 +36,5 @@ func SuccessWithPagination(c *gin.Context, status int, message string, data inte
 			Pagination: pagination,
 		},
 		"data": data,
-	})
-}
-
-func Error(c *gin.Context, status int, message string, errors []ErrorResponse) {
-	c.JSON(status, gin.H{
-		"meta": Meta{
-			Status:  status,
-			Message: message,
-		},
-		"errors": errors,
 	})
 }

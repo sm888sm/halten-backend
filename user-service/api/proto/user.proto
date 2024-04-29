@@ -70,12 +70,12 @@ message GetUserByUsernameResponse {
 }
 
 // Confirm New E-mail
-message ConfirmNewEmailRequest {
+message ConfirmEmailRequest {
     uint64 userID = 1;
     string token = 2;
 }
 
-message ConfirmNewEmailResponse {
+message ConfirmEmailResponse {
     string message = 1;
 }
 
@@ -96,6 +96,6 @@ service UserService {
     rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
     rpc UpdateEmail(UpdateEmailRequest) returns (UpdateEmailResponse);
     rpc UpdateUsername(UpdateUsernameRequest) returns (UpdateUsernameResponse);
-    rpc ConfirmNewEmail(ConfirmNewEmailRequest) returns (ConfirmNewEmailResponse);
+    rpc ConfirmEmail(ConfirmEmailRequest) returns (ConfirmEmailResponse);
     rpc ResendConfirmationEmail(ResendConfirmationEmailRequest) returns (ResendConfirmationEmailResponse);
 }

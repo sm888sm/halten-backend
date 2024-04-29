@@ -38,6 +38,8 @@ type BoardServiceClient interface {
 	RestoreBoard(ctx context.Context, in *RestoreBoardRequest, opts ...grpc.CallOption) (*RestoreBoardResponse, error)
 	ArchiveBoard(ctx context.Context, in *ArchiveBoardRequest, opts ...grpc.CallOption) (*ArchiveBoardResponse, error)
 	DeleteBoard(ctx context.Context, in *DeleteBoardRequest, opts ...grpc.CallOption) (*DeleteBoardResponse, error)
+	GetBoardIDByList(ctx context.Context, in *GetBoardIDByListRequest, opts ...grpc.CallOption) (*GetBoardIDByListResponse, error)
+	GetBoardIDByCard(ctx context.Context, in *GetBoardIDByCardRequest, opts ...grpc.CallOption) (*GetBoardIDByCardResponse, error)
 }
 
 type boardServiceClient struct {
@@ -192,6 +194,24 @@ func (c *boardServiceClient) DeleteBoard(ctx context.Context, in *DeleteBoardReq
 	return out, nil
 }
 
+func (c *boardServiceClient) GetBoardIDByList(ctx context.Context, in *GetBoardIDByListRequest, opts ...grpc.CallOption) (*GetBoardIDByListResponse, error) {
+	out := new(GetBoardIDByListResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetBoardIDByList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *boardServiceClient) GetBoardIDByCard(ctx context.Context, in *GetBoardIDByCardRequest, opts ...grpc.CallOption) (*GetBoardIDByCardResponse, error) {
+	out := new(GetBoardIDByCardResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/GetBoardIDByCard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BoardServiceServer is the server API for BoardService service.
 // All implementations must embed UnimplementedBoardServiceServer
 // for forward compatibility
@@ -212,6 +232,8 @@ type BoardServiceServer interface {
 	RestoreBoard(context.Context, *RestoreBoardRequest) (*RestoreBoardResponse, error)
 	ArchiveBoard(context.Context, *ArchiveBoardRequest) (*ArchiveBoardResponse, error)
 	DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error)
+	GetBoardIDByList(context.Context, *GetBoardIDByListRequest) (*GetBoardIDByListResponse, error)
+	GetBoardIDByCard(context.Context, *GetBoardIDByCardRequest) (*GetBoardIDByCardResponse, error)
 	mustEmbedUnimplementedBoardServiceServer()
 }
 
@@ -266,6 +288,12 @@ func (UnimplementedBoardServiceServer) ArchiveBoard(context.Context, *ArchiveBoa
 }
 func (UnimplementedBoardServiceServer) DeleteBoard(context.Context, *DeleteBoardRequest) (*DeleteBoardResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteBoard not implemented")
+}
+func (UnimplementedBoardServiceServer) GetBoardIDByList(context.Context, *GetBoardIDByListRequest) (*GetBoardIDByListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBoardIDByList not implemented")
+}
+func (UnimplementedBoardServiceServer) GetBoardIDByCard(context.Context, *GetBoardIDByCardRequest) (*GetBoardIDByCardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBoardIDByCard not implemented")
 }
 func (UnimplementedBoardServiceServer) mustEmbedUnimplementedBoardServiceServer() {}
 
@@ -568,6 +596,42 @@ func _BoardService_DeleteBoard_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BoardService_GetBoardIDByList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBoardIDByListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).GetBoardIDByList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/GetBoardIDByList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).GetBoardIDByList(ctx, req.(*GetBoardIDByListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BoardService_GetBoardIDByCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBoardIDByCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BoardServiceServer).GetBoardIDByCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/boardpb.BoardService/GetBoardIDByCard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BoardServiceServer).GetBoardIDByCard(ctx, req.(*GetBoardIDByCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BoardService_ServiceDesc is the grpc.ServiceDesc for BoardService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -638,6 +702,14 @@ var BoardService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteBoard",
 			Handler:    _BoardService_DeleteBoard_Handler,
+		},
+		{
+			MethodName: "GetBoardIDByList",
+			Handler:    _BoardService_GetBoardIDByList_Handler,
+		},
+		{
+			MethodName: "GetBoardIDByCard",
+			Handler:    _BoardService_GetBoardIDByCard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -5,7 +5,7 @@ import (
 
 	models "github.com/sm888sm/halten-backend/models"
 
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 	"github.com/sm888sm/halten-backend/user-service/internal/repositories"
 
@@ -25,7 +25,7 @@ func NewUserService(userRepo repositories.UserRepository, bcryptCost int) *UserS
 func (s *UserService) CreateUser(ctx context.Context, req *pb_user.CreateUserRequest) (*pb_user.CreateUserResponse, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), s.bcryptCost)
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	user := &models.User{
@@ -112,13 +112,13 @@ func (s *UserService) UpdateUsername(ctx context.Context, req *pb_user.UpdateUse
 	return &pb_user.UpdateUsernameResponse{Message: "Username changed successfully"}, nil
 }
 
-func (s *UserService) ConfirmNewEmail(ctx context.Context, req *pb_user.ConfirmNewEmailRequest) (*pb_user.ConfirmNewEmailResponse, error) {
-	err := s.userRepo.ConfirmNewEmail(&repositories.ConfirmNewEmailRequest{
+func (s *UserService) ConfirmEmail(ctx context.Context, req *pb_user.ConfirmEmailRequest) (*pb_user.ConfirmEmailResponse, error) {
+	err := s.userRepo.ConfirmEmail(&repositories.ConfirmEmailRequest{
 		UserID: req.UserID,
 		Token:  req.Token,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &pb_user.ConfirmNewEmailResponse{Message: "Email confirmed successfully"}, nil
+	return &pb_user.ConfirmEmailResponse{Message: "Email confirmed successfully"}, nil
 }

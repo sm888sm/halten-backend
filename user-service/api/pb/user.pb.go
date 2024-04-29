@@ -710,7 +710,7 @@ func (x *GetUserByUsernameResponse) GetUser() *User {
 }
 
 // Confirm New E-mail
-type ConfirmNewEmailRequest struct {
+type ConfirmEmailRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -719,8 +719,8 @@ type ConfirmNewEmailRequest struct {
 	Token  string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
 }
 
-func (x *ConfirmNewEmailRequest) Reset() {
-	*x = ConfirmNewEmailRequest{}
+func (x *ConfirmEmailRequest) Reset() {
+	*x = ConfirmEmailRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_user_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -728,13 +728,13 @@ func (x *ConfirmNewEmailRequest) Reset() {
 	}
 }
 
-func (x *ConfirmNewEmailRequest) String() string {
+func (x *ConfirmEmailRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConfirmNewEmailRequest) ProtoMessage() {}
+func (*ConfirmEmailRequest) ProtoMessage() {}
 
-func (x *ConfirmNewEmailRequest) ProtoReflect() protoreflect.Message {
+func (x *ConfirmEmailRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_user_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -746,26 +746,26 @@ func (x *ConfirmNewEmailRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConfirmNewEmailRequest.ProtoReflect.Descriptor instead.
-func (*ConfirmNewEmailRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConfirmEmailRequest.ProtoReflect.Descriptor instead.
+func (*ConfirmEmailRequest) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *ConfirmNewEmailRequest) GetUserID() uint64 {
+func (x *ConfirmEmailRequest) GetUserID() uint64 {
 	if x != nil {
 		return x.UserID
 	}
 	return 0
 }
 
-func (x *ConfirmNewEmailRequest) GetToken() string {
+func (x *ConfirmEmailRequest) GetToken() string {
 	if x != nil {
 		return x.Token
 	}
 	return ""
 }
 
-type ConfirmNewEmailResponse struct {
+type ConfirmEmailResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -773,8 +773,8 @@ type ConfirmNewEmailResponse struct {
 	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 }
 
-func (x *ConfirmNewEmailResponse) Reset() {
-	*x = ConfirmNewEmailResponse{}
+func (x *ConfirmEmailResponse) Reset() {
+	*x = ConfirmEmailResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_user_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -782,13 +782,13 @@ func (x *ConfirmNewEmailResponse) Reset() {
 	}
 }
 
-func (x *ConfirmNewEmailResponse) String() string {
+func (x *ConfirmEmailResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConfirmNewEmailResponse) ProtoMessage() {}
+func (*ConfirmEmailResponse) ProtoMessage() {}
 
-func (x *ConfirmNewEmailResponse) ProtoReflect() protoreflect.Message {
+func (x *ConfirmEmailResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_user_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -800,12 +800,12 @@ func (x *ConfirmNewEmailResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConfirmNewEmailResponse.ProtoReflect.Descriptor instead.
-func (*ConfirmNewEmailResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConfirmEmailResponse.ProtoReflect.Descriptor instead.
+func (*ConfirmEmailResponse) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *ConfirmNewEmailResponse) GetMessage() string {
+func (x *ConfirmEmailResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -1058,8 +1058,8 @@ var file_user_proto_goTypes = []interface{}{
 	(*GetUserByIDResponse)(nil),             // 10: userpb.GetUserByIDResponse
 	(*GetUserByUsernameRequest)(nil),        // 11: userpb.GetUserByUsernameRequest
 	(*GetUserByUsernameResponse)(nil),       // 12: userpb.GetUserByUsernameResponse
-	(*ConfirmNewEmailRequest)(nil),          // 13: userpb.ConfirmNewEmailRequest
-	(*ConfirmNewEmailResponse)(nil),         // 14: userpb.ConfirmNewEmailResponse
+	(*ConfirmEmailRequest)(nil),          // 13: userpb.ConfirmEmailRequest
+	(*ConfirmEmailResponse)(nil),         // 14: userpb.ConfirmEmailResponse
 	(*ResendConfirmationEmailRequest)(nil),  // 15: userpb.ResendConfirmationEmailRequest
 	(*ResendConfirmationEmailResponse)(nil), // 16: userpb.ResendConfirmationEmailResponse
 }
@@ -1072,7 +1072,7 @@ var file_user_proto_depIdxs = []int32{
 	3,  // 5: userpb.UserService.UpdatePassword:input_type -> userpb.UpdatePasswordRequest
 	5,  // 6: userpb.UserService.UpdateEmail:input_type -> userpb.UpdateEmailRequest
 	7,  // 7: userpb.UserService.UpdateUsername:input_type -> userpb.UpdateUsernameRequest
-	13, // 8: userpb.UserService.ConfirmNewEmail:input_type -> userpb.ConfirmNewEmailRequest
+	13, // 8: userpb.UserService.ConfirmEmail:input_type -> userpb.ConfirmEmailRequest
 	15, // 9: userpb.UserService.ResendConfirmationEmail:input_type -> userpb.ResendConfirmationEmailRequest
 	2,  // 10: userpb.UserService.CreateUser:output_type -> userpb.CreateUserResponse
 	10, // 11: userpb.UserService.GetUserByID:output_type -> userpb.GetUserByIDResponse
@@ -1080,7 +1080,7 @@ var file_user_proto_depIdxs = []int32{
 	4,  // 13: userpb.UserService.UpdatePassword:output_type -> userpb.UpdatePasswordResponse
 	6,  // 14: userpb.UserService.UpdateEmail:output_type -> userpb.UpdateEmailResponse
 	8,  // 15: userpb.UserService.UpdateUsername:output_type -> userpb.UpdateUsernameResponse
-	14, // 16: userpb.UserService.ConfirmNewEmail:output_type -> userpb.ConfirmNewEmailResponse
+	14, // 16: userpb.UserService.ConfirmEmail:output_type -> userpb.ConfirmEmailResponse
 	16, // 17: userpb.UserService.ResendConfirmationEmail:output_type -> userpb.ResendConfirmationEmailResponse
 	10, // [10:18] is the sub-list for method output_type
 	2,  // [2:10] is the sub-list for method input_type
@@ -1252,7 +1252,7 @@ func file_user_proto_init() {
 			}
 		}
 		file_user_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConfirmNewEmailRequest); i {
+			switch v := v.(*ConfirmEmailRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1264,7 +1264,7 @@ func file_user_proto_init() {
 			}
 		}
 		file_user_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConfirmNewEmailResponse); i {
+			switch v := v.(*ConfirmEmailResponse); i {
 			case 0:
 				return &v.state
 			case 1:

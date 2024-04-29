@@ -126,7 +126,7 @@ message UpdateCardDescriptionResponse {
 
 message MoveCardPositionRequest {
     uint64 cardID  = 1;
-    int64 new_position = 2;
+    int64 position = 2;
     uint64 old_listID  = 3;
     uint64 new_listID  = 4;
 }

@@ -1241,7 +1241,7 @@ type MoveCardPositionRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	CardID      uint64 `protobuf:"varint,1,opt,name=cardID,proto3" json:"cardID,omitempty"`
-	NewPosition int64  `protobuf:"varint,2,opt,name=new_position,json=newPosition,proto3" json:"new_position,omitempty"`
+	Position int64  `protobuf:"varint,2,opt,name=position,json=position,proto3" json:"position,omitempty"`
 	OldListID   uint64 `protobuf:"varint,3,opt,name=old_listID,json=oldListID,proto3" json:"old_listID,omitempty"`
 	NewListID   uint64 `protobuf:"varint,4,opt,name=new_listID,json=newListID,proto3" json:"new_listID,omitempty"`
 }
@@ -1287,7 +1287,7 @@ func (x *MoveCardPositionRequest) GetCardID() uint64 {
 
 func (x *MoveCardPositionRequest) GetNewPosition() int64 {
 	if x != nil {
-		return x.NewPosition
+		return x.Position
 	}
 	return 0
 }

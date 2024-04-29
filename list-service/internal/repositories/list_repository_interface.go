@@ -56,10 +56,10 @@ type DeleteListRequest struct {
 }
 
 type MoveListPositionRequest struct {
-	ID          uint64
-	NewPosition int64
-	BoardID     uint64
-	UserID      uint64
+	ID       uint64
+	Position int64
+	BoardID  uint64
+	UserID   uint64
 }
 
 type ListRepository interface {

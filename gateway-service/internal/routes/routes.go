@@ -13,11 +13,11 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 	authHandler := handlers.NewAuthHandler(svc)
 	boardHandler := handlers.NewBoardHandler(svc)
 	listHandler := handlers.NewListHandler(svc)
-	cardHandler := handlers.NewCardHandler(svc)
+	// cardHandler := handlers.NewCardHandler(svc)
 
 	userRoutes := r.Group("/user")
 	userRoutes.POST("/create", userHandler.CreateUser)
-	userRoutes.PUT("/confirm-new-email", userHandler.ConfirmNewEmail)
+	userRoutes.PUT("/confirm-email", userHandler.ConfirmEmail)
 
 	userRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
 	{
@@ -33,42 +33,52 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 	boardRoutes := r.Group("/boards")
 	boardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
 	{
-		boardRoutes.POST("/", boardHandler.CreateBoard)
-		boardRoutes.GET("/:boardID", boardHandler.GetBoardByID)
 		boardRoutes.GET("/", boardHandler.GetBoardList)
-		boardRoutes.PUT("/:boardID/name", boardHandler.UpdateBoardName)
-		boardRoutes.DELETE("/:boardID", boardHandler.DeleteBoard)
-		boardRoutes.POST("/:boardID/users", boardHandler.AddBoardUsers)
-		boardRoutes.DELETE("/:boardID/users", boardHandler.RemoveBoardUsers)
+		boardRoutes.GET("/:boardID", boardHandler.GetBoardByID)
 		boardRoutes.GET("/:boardID/users", boardHandler.GetBoardMembers)
+		boardRoutes.GET("/archived", boardHandler.GetArchivedBoardList)
+
+		boardRoutes.POST("/", boardHandler.CreateBoard)
+		boardRoutes.POST("/:boardID/users", boardHandler.AddBoardUsers)
+		boardRoutes.POST("/:boardID/labels", boardHandler.AddLabel)
+
+		boardRoutes.PUT("/:boardID/name", boardHandler.UpdateBoardName)
 		boardRoutes.PUT("/:boardID/users/:userID/role", boardHandler.AssignBoardUsersRole)
 		boardRoutes.PUT("/:boardID/owner", boardHandler.ChangeBoardOwner)
 		boardRoutes.PUT("/:boardID/visibility", boardHandler.ChangeBoardVisibility)
-		boardRoutes.POST("/:boardID/labels", boardHandler.AddLabel)
-		boardRoutes.DELETE("/:boardID/labels/:labelID", boardHandler.RemoveLabel)
 		boardRoutes.PUT("/:boardID/archive", boardHandler.ArchiveBoard)
 		boardRoutes.PUT("/:boardID/restore", boardHandler.RestoreBoard)
-		boardRoutes.GET("/archived", boardHandler.GetArchivedBoardList)
+
+		boardRoutes.DELETE("/:boardID", boardHandler.DeleteBoard)
+		boardRoutes.DELETE("/:boardID/users", boardHandler.RemoveBoardUsers)
+		boardRoutes.DELETE("/:boardID/labels/:labelID", boardHandler.RemoveLabel)
+
 	}
 
 	listRoutes := r.Group("/lists")
 	listRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
 	{
+		listRoutes.GET("/:listID", listHandler.GetListByID)
+		listRoutes.GET("/board/:boardID", listHandler.GetListsByBoard)
+
 		listRoutes.POST("/", listHandler.CreateList)
-		listRoutes.GET("/:id", listHandler.GetListsByBoard)
-		listRoutes.PUT("/:id", listHandler.UpdateList)
-		listRoutes.DELETE("/:id", listHandler.DeleteList)
-		listRoutes.PUT("/:id/position", listHandler.MoveListPosition)
+
+		listRoutes.PUT("/:listID", listHandler.UpdateListName)
+		listRoutes.PUT("/:listID/move", listHandler.MoveListPosition)
+		listRoutes.PUT("/:listID/archive", listHandler.ArchiveList)
+		listRoutes.PUT("/:listID/restore", listHandler.RestoreList)
+
+		listRoutes.DELETE("/:listID", listHandler.DeleteList)
 	}
 
-	cardRoutes := r.Group("/cards")
-	cardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
-	{
-		cardRoutes.POST("/", cardHandler.CreateCard)
-		cardRoutes.GET("/board/:board-id", cardHandler.GetCardsByBoard)
-		cardRoutes.GET("/list/:list-id", cardHandler.GetCardsByList)
-		cardRoutes.GET("/:card-id", cardHandler.GetCardByID)
-		cardRoutes.DELETE("/:card-id", cardHandler.DeleteCard)
-		cardRoutes.PUT("/:card-id/position", cardHandler.MoveCardPosition)
-	}
+	// cardRoutes := r.Group("/cards")
+	// cardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
+	// {
+	// 	cardRoutes.POST("/", cardHandler.CreateCard)
+	// 	cardRoutes.GET("/board/:board-id", cardHandler.GetCardsByBoard)
+	// 	cardRoutes.GET("/list/:list-id", cardHandler.GetCardsByList)
+	// 	cardRoutes.GET("/:card-id", cardHandler.GetCardByID)
+	// 	cardRoutes.DELETE("/:card-id", cardHandler.DeleteCard)
+	// 	cardRoutes.PUT("/:card-id/position", cardHandler.MoveCardPosition)
+	// }
 }

@@ -5,7 +5,7 @@ import (
 
 	pb_card "github.com/sm888sm/halten-backend/card-service/api/pb"
 	"github.com/sm888sm/halten-backend/common/constants/fielderrors"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 )
@@ -127,90 +127,90 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 }
 
 func validateCreateCardRequest(req *pb_card.CreateCardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.ListID == 0 {
-		fieldErrors["ListID"] = errorhandler.FieldError{
+		fieldErrors["ListID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "ListID is required",
 			Field:   "ListID",
 		}
 	}
 	if req.Name == "" {
-		fieldErrors["Name"] = errorhandler.FieldError{
+		fieldErrors["Name"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Name is required",
 			Field:   "Name",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateGetCardByIDRequest(req *pb_card.GetCardByIDRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
 func validateGetCardsByListRequest(req *pb_card.GetCardsByListRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.ListID == 0 {
-		fieldErrors["ListID"] = errorhandler.FieldError{
+		fieldErrors["ListID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "ListID is required",
 			Field:   "ListID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
 func validateGetCardsByBoardRequest(_ *pb_card.GetCardsByBoardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
 func validateMoveCardPositionRequest(req *pb_card.MoveCardPositionRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	if req.NewPosition == 0 {
-		fieldErrors["Position"] = errorhandler.FieldError{
+	if req.Position == 0 {
+		fieldErrors["Position"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Position is required",
-			Field:   "NewPosition",
+			Field:   "Position",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateUpdateCardNameRequest(req *pb_card.UpdateCardNameRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -218,20 +218,20 @@ func validateUpdateCardNameRequest(req *pb_card.UpdateCardNameRequest) error {
 	}
 
 	if req.Name == "" {
-		fieldErrors["Name"] = errorhandler.FieldError{
+		fieldErrors["Name"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Name is required",
 			Field:   "Name",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateUpdateCardDescriptionRequest(req *pb_card.UpdateCardDescriptionRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -239,21 +239,21 @@ func validateUpdateCardDescriptionRequest(req *pb_card.UpdateCardDescriptionRequ
 	}
 
 	if req.Description == "" {
-		fieldErrors["Description"] = errorhandler.FieldError{
+		fieldErrors["Description"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Description is required",
 			Field:   "Description",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateAddCardLabelRequest(req *pb_card.AddCardLabelRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -261,21 +261,21 @@ func validateAddCardLabelRequest(req *pb_card.AddCardLabelRequest) error {
 	}
 
 	if req.LabelID == 0 {
-		fieldErrors["LabelID"] = errorhandler.FieldError{
+		fieldErrors["LabelID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "LabelID is required",
 			Field:   "LabelID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRemoveCardLabelRequest(req *pb_card.RemoveCardLabelRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -283,49 +283,49 @@ func validateRemoveCardLabelRequest(req *pb_card.RemoveCardLabelRequest) error {
 	}
 
 	if req.LabelID == 0 {
-		fieldErrors["LabelID"] = errorhandler.FieldError{
+		fieldErrors["LabelID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "LabelID is required",
 			Field:   "LabelID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateSetCardDatesRequest(req *pb_card.SetCardDatesRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateMarkCardCompleteRequest(req *pb_card.MarkCardCompleteRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateAddCardAttachmentRequest(req *pb_card.AddCardAttachmentRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -333,21 +333,21 @@ func validateAddCardAttachmentRequest(req *pb_card.AddCardAttachmentRequest) err
 	}
 
 	if req.AttachmentID == 0 {
-		fieldErrors["Attachment"] = errorhandler.FieldError{
+		fieldErrors["Attachment"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Attachment is required",
 			Field:   "Attachment",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRemoveCardAttachmentRequest(req *pb_card.RemoveCardAttachmentRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -355,21 +355,21 @@ func validateRemoveCardAttachmentRequest(req *pb_card.RemoveCardAttachmentReques
 	}
 
 	if req.AttachmentID == 0 {
-		fieldErrors["AttachmentID"] = errorhandler.FieldError{
+		fieldErrors["AttachmentID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "AttachmentID is required",
 			Field:   "AttachmentID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateAddCardCommentRequest(req *pb_card.AddCardCommentRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -377,21 +377,21 @@ func validateAddCardCommentRequest(req *pb_card.AddCardCommentRequest) error {
 	}
 
 	if req.Content == "" {
-		fieldErrors["Content"] = errorhandler.FieldError{
+		fieldErrors["Content"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Content is required",
 			Field:   "Content",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRemoveCardCommentRequest(req *pb_card.RemoveCardCommentRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -399,21 +399,21 @@ func validateRemoveCardCommentRequest(req *pb_card.RemoveCardCommentRequest) err
 	}
 
 	if req.CommentID == 0 {
-		fieldErrors["CommentID"] = errorhandler.FieldError{
+		fieldErrors["CommentID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CommentID is required",
 			Field:   "CommentID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateAddCardMembersRequest(req *pb_card.AddCardMembersRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -421,21 +421,21 @@ func validateAddCardMembersRequest(req *pb_card.AddCardMembersRequest) error {
 	}
 
 	if len(req.UserIDs) == 0 {
-		fieldErrors["UserIDs"] = errorhandler.FieldError{
+		fieldErrors["UserIDs"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "At least one UserID is required",
 			Field:   "UserIDs",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRemoveCardMembersRequest(req *pb_card.RemoveCardMembersRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
@@ -443,54 +443,54 @@ func validateRemoveCardMembersRequest(req *pb_card.RemoveCardMembersRequest) err
 	}
 
 	if len(req.UserIDs) == 0 {
-		fieldErrors["UserIDs"] = errorhandler.FieldError{
+		fieldErrors["UserIDs"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "At least one UserID is required",
 			Field:   "UserIDs",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateArchiveCardRequest(req *pb_card.ArchiveCardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRestoreCardRequest(req *pb_card.RestoreCardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateDeleteCardRequest(req *pb_card.DeleteCardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {
-		fieldErrors["CardID"] = errorhandler.FieldError{
+		fieldErrors["CardID"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "CardID is required",
 			Field:   "CardID",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }

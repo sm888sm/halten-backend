@@ -5,14 +5,14 @@ import (
 	"strconv"
 
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 func extractIDFromContext(ctx context.Context, key string, errMsg string) (uint64, error) {
-	errInvalid := status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(httpcodes.ErrBadRequest, errMsg).Error())
+	errInvalid := status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(httpcodes.ErrBadRequest, errMsg).Error())
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"log"
 	"sync"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"github.com/sm888sm/halten-backend/gateway-service/internal/config"
 
 	pbBoard "github.com/sm888sm/halten-backend/board-service/api/pb"
@@ -119,35 +119,35 @@ func GetServices(cfg *config.ServiceConfig) *Services {
 
 func (s *Services) GetUserClient() (pb_user.UserServiceClient, error) {
 	if s.userConn.GetState() != connectivity.Ready {
-		return nil, errors.New("user service not available")
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return s.userClient, nil
 }
 
 func (s *Services) GetAuthClient() (pb_user.AuthServiceClient, error) {
 	if s.authConn.GetState() != connectivity.Ready {
-		return nil, errors.New("auth service not available")
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return s.authClient, nil
 }
 
 func (s *Services) GetListClient() (pb_list.ListServiceClient, error) {
 	if s.listConn.GetState() != connectivity.Ready {
-		return nil, errors.New("list service not available")
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return s.listClient, nil
 }
 
 func (s *Services) GetBoardClient() (pbBoard.BoardServiceClient, error) {
 	if s.boardConn.GetState() != connectivity.Ready {
-		return nil, errors.New("board service not available")
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return s.boardClient, nil
 }
 
 func (s *Services) GetCardClient() (pb_card.CardServiceClient, error) {
 	if s.cardConn.GetState() != connectivity.Ready {
-		return nil, errors.New("card service not available")
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return s.cardClient, nil
 }

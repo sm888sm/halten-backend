@@ -28,7 +28,7 @@ type UserServiceClient interface {
 	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error)
 	UpdateEmail(ctx context.Context, in *UpdateEmailRequest, opts ...grpc.CallOption) (*UpdateEmailResponse, error)
 	UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error)
-	ConfirmNewEmail(ctx context.Context, in *ConfirmNewEmailRequest, opts ...grpc.CallOption) (*ConfirmNewEmailResponse, error)
+	ConfirmEmail(ctx context.Context, in *ConfirmEmailRequest, opts ...grpc.CallOption) (*ConfirmEmailResponse, error)
 	ResendConfirmationEmail(ctx context.Context, in *ResendConfirmationEmailRequest, opts ...grpc.CallOption) (*ResendConfirmationEmailResponse, error)
 }
 
@@ -94,9 +94,9 @@ func (c *userServiceClient) UpdateUsername(ctx context.Context, in *UpdateUserna
 	return out, nil
 }
 
-func (c *userServiceClient) ConfirmNewEmail(ctx context.Context, in *ConfirmNewEmailRequest, opts ...grpc.CallOption) (*ConfirmNewEmailResponse, error) {
-	out := new(ConfirmNewEmailResponse)
-	err := c.cc.Invoke(ctx, "/userpb.UserService/ConfirmNewEmail", in, out, opts...)
+func (c *userServiceClient) ConfirmEmail(ctx context.Context, in *ConfirmEmailRequest, opts ...grpc.CallOption) (*ConfirmEmailResponse, error) {
+	out := new(ConfirmEmailResponse)
+	err := c.cc.Invoke(ctx, "/userpb.UserService/ConfirmEmail", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ type UserServiceServer interface {
 	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error)
 	UpdateEmail(context.Context, *UpdateEmailRequest) (*UpdateEmailResponse, error)
 	UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error)
-	ConfirmNewEmail(context.Context, *ConfirmNewEmailRequest) (*ConfirmNewEmailResponse, error)
+	ConfirmEmail(context.Context, *ConfirmEmailRequest) (*ConfirmEmailResponse, error)
 	ResendConfirmationEmail(context.Context, *ResendConfirmationEmailRequest) (*ResendConfirmationEmailResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -149,8 +149,8 @@ func (UnimplementedUserServiceServer) UpdateEmail(context.Context, *UpdateEmailR
 func (UnimplementedUserServiceServer) UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUsername not implemented")
 }
-func (UnimplementedUserServiceServer) ConfirmNewEmail(context.Context, *ConfirmNewEmailRequest) (*ConfirmNewEmailResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ConfirmNewEmail not implemented")
+func (UnimplementedUserServiceServer) ConfirmEmail(context.Context, *ConfirmEmailRequest) (*ConfirmEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmEmail not implemented")
 }
 func (UnimplementedUserServiceServer) ResendConfirmationEmail(context.Context, *ResendConfirmationEmailRequest) (*ResendConfirmationEmailResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResendConfirmationEmail not implemented")
@@ -276,20 +276,20 @@ func _UserService_UpdateUsername_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_ConfirmNewEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConfirmNewEmailRequest)
+func _UserService_ConfirmEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmEmailRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UserServiceServer).ConfirmNewEmail(ctx, in)
+		return srv.(UserServiceServer).ConfirmEmail(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/userpb.UserService/ConfirmNewEmail",
+		FullMethod: "/userpb.UserService/ConfirmEmail",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).ConfirmNewEmail(ctx, req.(*ConfirmNewEmailRequest))
+		return srv.(UserServiceServer).ConfirmEmail(ctx, req.(*ConfirmEmailRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -344,8 +344,8 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_UpdateUsername_Handler,
 		},
 		{
-			MethodName: "ConfirmNewEmail",
-			Handler:    _UserService_ConfirmNewEmail_Handler,
+			MethodName: "ConfirmEmail",
+			Handler:    _UserService_ConfirmEmail_Handler,
 		},
 		{
 			MethodName: "ResendConfirmationEmail",

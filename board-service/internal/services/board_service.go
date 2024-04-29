@@ -14,7 +14,7 @@ import (
 	"github.com/sm888sm/halten-backend/board-service/internal/repositories"
 
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"github.com/sm888sm/halten-backend/common/helpers"
 
 	"github.com/sm888sm/halten-backend/common/messaging/rabbitmq/publishers"
@@ -57,7 +57,7 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 
 	listService, err := s.services.GetListClient()
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	listReq := &pb_list.CreateListRequest{
@@ -74,10 +74,10 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 		})
 
 		if err != nil {
-			return nil, errorhandler.NewGrpcInternalError()
+			return nil, errorhandlers.NewGrpcInternalError()
 		}
 
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	cardService, err := s.services.GetCardClient()
@@ -87,10 +87,10 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 			BoardID: repoRes.Board.ID,
 		})
 		if err != nil {
-			return nil, errorhandler.NewGrpcInternalError()
+			return nil, errorhandlers.NewGrpcInternalError()
 		}
 
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	cardReq := &pb_card.CreateCardRequest{
@@ -105,7 +105,7 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 			BoardID: repoRes.Board.ID,
 		})
 		if err != nil {
-			return nil, errorhandler.NewGrpcInternalError()
+			return nil, errorhandlers.NewGrpcInternalError()
 		}
 
 		return nil, err
@@ -134,12 +134,12 @@ func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardB
 
 	listService, err := s.services.GetListClient()
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	cardService, err := s.services.GetCardClient()
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	listReq := &pb_list.GetListsByBoardRequest{}
@@ -148,12 +148,12 @@ func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardB
 
 	listRes, err := listService.GetListsByBoard(ctx, listReq)
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	cardRes, err := cardService.GetCardsByBoard(ctx, cardReq)
 	if err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Convert the board model to a protobuf message
@@ -287,7 +287,7 @@ func (s *BoardService) GetArchivedBoardList(ctx context.Context, req *pb_board.G
 func (s *BoardService) UpdateBoardName(ctx context.Context, req *pb_board.UpdateBoardNameRequest) (*pb_board.UpdateBoardNameResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	err := s.boardRepo.UpdateBoardName(&repositories.UpdateBoardNameRequest{BoardID: boardID, Name: req.Name})
@@ -302,7 +302,7 @@ func (s *BoardService) UpdateBoardName(ctx context.Context, req *pb_board.Update
 func (s *BoardService) AddBoardUsers(ctx context.Context, req *pb_board.AddBoardUsersRequest) (*pb_board.AddBoardUsersResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Extract the board ID and user IDs from the request
@@ -326,7 +326,7 @@ func (s *BoardService) AddBoardUsers(ctx context.Context, req *pb_board.AddBoard
 func (s *BoardService) RemoveBoardUsers(ctx context.Context, req *pb_board.RemoveBoardUsersRequest) (*pb_board.RemoveBoardUsersResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Extract the board ID and user IDs from the request
@@ -350,12 +350,12 @@ func (s *BoardService) RemoveBoardUsers(ctx context.Context, req *pb_board.Remov
 func (s *BoardService) AssignBoardUsersRole(ctx context.Context, req *pb_board.AssignBoardUsersRoleRequest) (*pb_board.AssignBoardUsersRoleResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Call the repository function to assign the user role to the board
@@ -378,7 +378,7 @@ func (s *BoardService) AssignBoardUsersRole(ctx context.Context, req *pb_board.A
 func (s *BoardService) ChangeBoardOwner(ctx context.Context, req *pb_board.ChangeBoardOwnerRequest) (*pb_board.ChangeBoardOwnerResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	err := s.boardRepo.ChangeBoardOwner(&repositories.ChangeBoardOwnerRequest{
@@ -398,7 +398,7 @@ func (s *BoardService) ChangeBoardOwner(ctx context.Context, req *pb_board.Chang
 func (s *BoardService) ChangeBoardVisibility(ctx context.Context, req *pb_board.ChangeBoardVisibilityRequest) (*pb_board.ChangeBoardVisibilityResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Call the repository function to change the visibility of the board
@@ -419,7 +419,7 @@ func (s *BoardService) ChangeBoardVisibility(ctx context.Context, req *pb_board.
 func (s *BoardService) AddLabel(ctx context.Context, req *pb_board.AddLabelRequest) (*pb_board.AddLabelResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	label, err := s.boardRepo.AddLabel(&repositories.AddLabelRequest{
@@ -444,7 +444,7 @@ func (s *BoardService) AddLabel(ctx context.Context, req *pb_board.AddLabelReque
 func (s *BoardService) RemoveLabel(ctx context.Context, req *pb_board.RemoveLabelRequest) (*pb_board.RemoveLabelResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	err := s.boardRepo.RemoveLabel(&repositories.RemoveLabelRequest{
@@ -464,7 +464,7 @@ func (s *BoardService) RemoveLabel(ctx context.Context, req *pb_board.RemoveLabe
 func (s *BoardService) ArchiveBoard(ctx context.Context, req *pb_board.ArchiveBoardRequest) (*pb_board.ArchiveBoardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Call the repository function to archive the board
@@ -484,7 +484,7 @@ func (s *BoardService) ArchiveBoard(ctx context.Context, req *pb_board.ArchiveBo
 func (s *BoardService) RestoreBoard(ctx context.Context, req *pb_board.RestoreBoardRequest) (*pb_board.RestoreBoardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Call the repository function to restore the board
@@ -504,7 +504,7 @@ func (s *BoardService) RestoreBoard(ctx context.Context, req *pb_board.RestoreBo
 func (s *BoardService) DeleteBoard(ctx context.Context, req *pb_board.DeleteBoardRequest) (*pb_board.DeleteBoardResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	// Call the repository function
@@ -518,5 +518,27 @@ func (s *BoardService) DeleteBoard(ctx context.Context, req *pb_board.DeleteBoar
 	// Return the response
 	return &pb_board.DeleteBoardResponse{
 		Message: "Board successfully deleted",
+	}, nil
+}
+
+func (s *BoardService) GetBoardIDByList(ctx context.Context, req *pb_board.GetBoardIDByListRequest) (*pb_board.GetBoardIDByListResponse, error) {
+	boardID, err := s.boardRepo.GetBoardIDByList(&repositories.GetBoardIDByListRequest{ListID: req.ListID})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb_board.GetBoardIDByListResponse{
+		BoardID: boardID,
+	}, nil
+}
+
+func (s *BoardService) GetBoardIDByCard(ctx context.Context, req *pb_board.GetBoardIDByCardRequest) (*pb_board.GetBoardIDByCardResponse, error) {
+	boardID, err := s.boardRepo.GetBoardIDByCard(&repositories.GetBoardIDByCardRequest{CardID: req.CardID})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb_board.GetBoardIDByCardResponse{
+		BoardID: boardID,
 	}, nil
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
 )
@@ -17,7 +17,7 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 		ctx := c.Request.Context()
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, errorhandler.NewAPIError(http.StatusUnauthorized, "Authorization header not provided"))
+			c.JSON(http.StatusUnauthorized, errorhandlers.NewAPIError(http.StatusUnauthorized, "Authorization header not provided"))
 			c.Abort()
 			return
 		}
@@ -25,7 +25,7 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := validateToken(token, secretKey)
 		if err != nil {
-			errorhandler.HandleError(c, err)
+			errorhandlers.HandleError(c, err)
 			c.Abort()
 			return
 		}
@@ -34,14 +34,14 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 
 		userService, err := services.GetUserClient()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+			c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 			c.Abort()
 			return
 		}
 
 		_, err = userService.GetUserByID(ctx, &pb_user.GetUserByIDRequest{UserID: uint64(userID)})
 		if err != nil {
-			errorhandler.HandleError(c, err)
+			errorhandlers.HandleError(c, err)
 			c.Abort()
 			return
 		}
@@ -52,7 +52,7 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 }
 
 func validateToken(tokenString string, secretKey string) (*jwt.MapClaims, error) {
-	invalidTokenError := errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid token")
+	invalidTokenError := errorhandlers.NewAPIError(httpcodes.ErrBadRequest, "Invalid token")
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

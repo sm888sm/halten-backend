@@ -109,6 +109,14 @@ type DeleteBoardRequest struct {
 	BoardID uint64
 }
 
+type GetBoardIDByListRequest struct {
+	ListID uint64
+}
+
+type GetBoardIDByCardRequest struct {
+	CardID uint64
+}
+
 type BoardRepository interface {
 	CreateBoard(req *CreateBoardRequest) (*CreateBoardResponse, error)
 	GetBoardByID(req *GetBoardByIDRequest) (*GetBoardByIDResponse, error)
@@ -126,4 +134,6 @@ type BoardRepository interface {
 	ArchiveBoard(req *ArchiveBoardRequest) error
 	RestoreBoard(req *RestoreBoardRequest) error
 	DeleteBoard(req *DeleteBoardRequest) error
+	GetBoardIDByList(req *GetBoardIDByListRequest) (uint64, error)
+	GetBoardIDByCard(req *GetBoardIDByCardRequest) (uint64, error)
 }

@@ -245,6 +245,22 @@ message DeleteBoardResponse {
     string message = 1;
 }
 
+message GetBoardIDByListRequest {
+    uint64 listID = 1;
+}
+
+message GetBoardIDByListResponse {
+    uint64 boardID = 1;
+}
+
+message GetBoardIDByCardRequest {
+    uint64 cardID = 1;
+}
+
+message GetBoardIDByCardResponse {
+    uint64 boardID = 1;
+}
+
 // Service Definition
 service BoardService {
     rpc CreateBoard(CreateBoardRequest) returns (CreateBoardResponse);
@@ -264,4 +280,7 @@ service BoardService {
     rpc RestoreBoard(RestoreBoardRequest) returns (RestoreBoardResponse);
     rpc ArchiveBoard(ArchiveBoardRequest) returns (ArchiveBoardResponse);
     rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
+
+    rpc GetBoardIDByList(GetBoardIDByListRequest) returns (GetBoardIDByListResponse);
+    rpc GetBoardIDByCard(GetBoardIDByCardRequest) returns (GetBoardIDByCardResponse);
 }

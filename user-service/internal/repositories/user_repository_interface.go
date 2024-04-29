@@ -43,7 +43,7 @@ type UpdateUsernameRequest struct {
 	Username string
 }
 
-type ConfirmNewEmailRequest struct {
+type ConfirmEmailRequest struct {
 	UserID uint64
 	Token  string
 }
@@ -66,7 +66,7 @@ type UserRepository interface {
 	UpdatePassword(req *UpdatePasswordRequest) error
 	UpdateEmail(req *UpdateEmailRequest) error
 	UpdateUsername(req *UpdateUsernameRequest) error
-	ConfirmNewEmail(req *ConfirmNewEmailRequest) error
+	ConfirmEmail(req *ConfirmEmailRequest) error
 	CheckBoardUserRole(req *CheckBoardUserRoleRequest) error
 	CheckBoardVisibility(req *CheckBoardVisibilityRequest) error
 	// ... Other data access methods ...

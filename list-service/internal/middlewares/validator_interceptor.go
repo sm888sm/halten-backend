@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/sm888sm/halten-backend/common/constants/fielderrors"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	pb_list "github.com/sm888sm/halten-backend/list-service/api/pb"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
@@ -58,71 +58,71 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 }
 
 func validateCreateListRequest(req *pb_list.CreateListRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.List.Name == "" {
-		fieldErrors["Name"] = errorhandler.FieldError{
+		fieldErrors["Name"] = errorhandlers.FieldError{
 			Field:   "name",
 			Message: "List name cannot be empty",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateGetListByIDRequest(_ *pb_list.GetListByIDRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateGetListsByBoardRequest(_ *pb_list.GetListsByBoardRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateUpdateListNameRequest(req *pb_list.UpdateListNameRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.Name == "" {
-		fieldErrors["Name"] = errorhandler.FieldError{
+		fieldErrors["Name"] = errorhandlers.FieldError{
 			Code:    fielderrors.ErrRequired,
 			Message: "Name is required",
 			Field:   "Name",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateMoveListPositionRequest(req *pb_list.MoveListPositionRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	if req.NewPosition == 0 {
-		fieldErrors["NewPosition"] = errorhandler.FieldError{
-			Field:   "NewPosition",
+	if req.Position == 0 {
+		fieldErrors["Position"] = errorhandlers.FieldError{
+			Field:   "Position",
 			Message: "New position cannot be zero",
 		}
 	}
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateArchiveListRequest(_ *pb_list.ArchiveListRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateRestoreListRequest(_ *pb_list.RestoreListRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
 func validateDeleteListRequest(_ *pb_list.DeleteListRequest) error {
-	fieldErrors := make(map[string]errorhandler.FieldError)
+	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
+	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }

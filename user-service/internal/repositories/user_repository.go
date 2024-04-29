@@ -10,7 +10,7 @@ import (
 
 	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roleshierarchy"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,25 +33,25 @@ func (r *GormUserRepository) CreateUser(req *CreateUserRequest) (*CreateUserResp
 		result := tx.Model(&models.User{}).Where("username = ?", req.User.Username).First(&user)
 		if result.Error != nil {
 			if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				errorhandler.NewGrpcInternalError()
+				errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "username already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "username already in use").Error())
 		}
 
 		// Check if email is already in use
 		result = tx.Model(&models.User{}).Where("email = ? OR new_email = ?", req.User.Email, req.User.Email).First(&user)
 		if result.Error != nil {
 			if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return errorhandler.NewGrpcInternalError()
+				return errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
 		}
 
 		// Create the user
 		if err := tx.Create(req.User).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		return nil
@@ -69,9 +69,9 @@ func (r *GormUserRepository) GetUserByID(req *GetUserByIDRequest) (*GetUserByIDR
 	result := r.db.First(&user, req.UserID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+			return nil, status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 		}
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return &GetUserByIDResponse{User: &user}, nil
 }
@@ -81,9 +81,9 @@ func (r *GormUserRepository) GetUserByUsername(req *GetUserByUsernameRequest) (*
 	result := r.db.Where("username = ?", req.Username).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+			return nil, status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 		}
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 	return &GetUserByUsernameResponse{User: &user}, nil
 }
@@ -91,10 +91,10 @@ func (r *GormUserRepository) GetUserByUsername(req *GetUserByUsernameRequest) (*
 func (r *GormUserRepository) UpdatePassword(req *UpdatePasswordRequest) error {
 	result := r.db.Model(&models.User{}).Where("id = ?", req.UserID).Update("password", req.NewPassword)
 	if result.Error != nil {
-		return errorhandler.NewGrpcInternalError()
+		return errorhandlers.NewGrpcInternalError()
 	}
 	if result.RowsAffected == 0 {
-		return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+		return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 	}
 	return nil
 }
@@ -107,19 +107,19 @@ func (r *GormUserRepository) UpdateEmail(req *UpdateEmailRequest) error {
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		// Check if newEmail is already in use
 		result = tx.Model(&models.User{}).Where("email = ? OR new_email = ?", req.NewEmail, req.NewEmail).First(&user)
 		if result.Error != nil {
 			if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				errorhandler.NewGrpcInternalError()
+				errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
 		}
 
 		// Generate a token for email verification
@@ -130,7 +130,7 @@ func (r *GormUserRepository) UpdateEmail(req *UpdateEmailRequest) error {
 		user.Token = token
 		user.TokenCreatedAt = time.Now()
 		if err := tx.Save(&user).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		return nil
@@ -151,25 +151,25 @@ func (r *GormUserRepository) UpdateUsername(req *UpdateUsernameRequest) error {
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		// Check if newUsername is already in use
 		result = tx.Model(&models.User{}).Where("username = ?", req.Username).First(&user)
 		if result.Error != nil {
 			if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return errorhandler.NewGrpcInternalError()
+				return errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "Username already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "Username already in use").Error())
 		}
 
 		// Update username
 		user.Username = req.Username
 		if err := tx.Save(&user).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		return nil
@@ -182,7 +182,7 @@ func (r *GormUserRepository) UpdateUsername(req *UpdateUsernameRequest) error {
 	return nil
 }
 
-func (r *GormUserRepository) ConfirmNewEmail(req *ConfirmNewEmailRequest) error {
+func (r *GormUserRepository) ConfirmEmail(req *ConfirmEmailRequest) error {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var user models.User
 
@@ -190,14 +190,14 @@ func (r *GormUserRepository) ConfirmNewEmail(req *ConfirmNewEmailRequest) error 
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		// Check if token is valid
 		if user.Token != req.Token || time.Since(user.TokenCreatedAt) > 24*time.Hour {
-			return status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid or expired token").Error())
+			return status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(httpcodes.ErrBadRequest, "Invalid or expired token").Error())
 		}
 
 		// Update email
@@ -206,7 +206,7 @@ func (r *GormUserRepository) ConfirmNewEmail(req *ConfirmNewEmailRequest) error 
 		user.Token = ""
 		user.TokenCreatedAt = time.Time{}
 		if err := tx.Save(&user).Error; err != nil {
-			return errorhandler.NewGrpcInternalError()
+			return errorhandlers.NewGrpcInternalError()
 		}
 
 		return nil
@@ -223,13 +223,13 @@ func (r *GormUserRepository) CheckBoardUserRole(req *CheckBoardUserRoleRequest) 
 	var permission models.BoardMember
 	if err := r.db.Select("role").Where("board_id = ? AND user_id = ?", req.BoardID, req.UserID).First(&permission).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
+			return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Permission not found").Error())
 		}
-		return errorhandler.NewGrpcInternalError()
+		return errorhandlers.NewGrpcInternalError()
 	}
 
 	if roleshierarchy.RoleHierarchy[permission.Role] < roleshierarchy.RoleHierarchy[req.RequiredRole] {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Insufficient permissions")
+		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Insufficient permissions").Error())
 	}
 
 	return nil
@@ -248,13 +248,13 @@ func (r *GormUserRepository) CheckBoardVisibility(req *CheckBoardVisibilityReque
 
 	if err := r.db.Raw(query, req.UserID, req.BoardID).Scan(&result).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
+			return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
 		}
-		return errorhandler.NewGrpcInternalError()
+		return errorhandlers.NewGrpcInternalError()
 	}
 
 	if result.Visibility == "private" && result.UserID != uint(req.UserID) {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Permission not found")
+		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Permission not found").Error())
 	}
 
 	return nil

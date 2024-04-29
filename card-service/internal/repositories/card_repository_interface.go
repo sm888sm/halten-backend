@@ -45,11 +45,11 @@ type DeleteCardRequest struct {
 }
 
 type MoveCardPositionRequest struct {
-	CardID      uint64
-	NewPosition int64
-	BoardID     uint64
-	OldListID   uint64
-	NewListID   uint64
+	CardID    uint64
+	Position  int64
+	BoardID   uint64
+	OldListID uint64
+	NewListID uint64
 }
 
 type UpdateCardNameRequest struct {

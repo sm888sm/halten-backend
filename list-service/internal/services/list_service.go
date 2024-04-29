@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
-	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/errorhandlers"
+	"github.com/sm888sm/halten-backend/common/helpers"
 	pb "github.com/sm888sm/halten-backend/list-service/api/pb"
 	"github.com/sm888sm/halten-backend/list-service/internal/repositories"
 	models "github.com/sm888sm/halten-backend/models"
@@ -19,48 +20,21 @@ func NewListService(repo repositories.ListRepository) *ListService {
 	return &ListService{listRepo: repo}
 }
 
-func (s *ListService) CreateList(ctx context.Context, req *pb.CreateListRequest) (*pb.CreateListResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
-	}
+/*
+********************
+* No Authorization *
+********************
+ */
 
-	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
-	}
-
-	list := &models.List{
-		BoardID: boardID,
-		Name:    req.List.Name,
-	}
-
-	createListReq := &repositories.CreateListRequest{
-		List:   list,
-		UserID: userID,
-	}
-	resp, err := s.listRepo.CreateList(createListReq)
+func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDRequest) (*pb.GetListByIDResponse, error) {
+	userID, err := helpers.ExtractUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.CreateListResponse{
-		List: &pb.List{
-			ListID:  resp.List.ID,
-			BoardID: resp.List.BoardID,
-			Name:    resp.List.Name,
-		},
-	}, nil
-}
-
-func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDRequest) (*pb.GetListByIDResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
-	}
 
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	getListsReq := &repositories.GetListsByBoardRequest{
@@ -89,14 +63,14 @@ func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDReque
 }
 
 func (s *ListService) GetListsByBoard(ctx context.Context, req *pb.GetListsByBoardRequest) (*pb.GetListsByBoardResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	userID, err := helpers.ExtractUserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	boardID, err := helpers.ExtractBoardIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	repoReq := &repositories.GetListsByBoardRequest{
@@ -125,15 +99,54 @@ func (s *ListService) GetListsByBoard(ctx context.Context, req *pb.GetListsByBoa
 	return res, nil
 }
 
-func (s *ListService) UpdateListName(ctx context.Context, req *pb.UpdateListNameRequest) (*pb.UpdateListNameResponse, error) {
+/*
+****************************
+* Authorization Required *
+****************************
+ */
+
+func (s *ListService) CreateList(ctx context.Context, req *pb.CreateListRequest) (*pb.CreateListResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
+	}
+
+	list := &models.List{
+		BoardID: boardID,
+		Name:    req.List.Name,
+	}
+
+	createListReq := &repositories.CreateListRequest{
+		List:   list,
+		UserID: userID,
+	}
+	resp, err := s.listRepo.CreateList(createListReq)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CreateListResponse{
+		List: &pb.List{
+			ListID:  resp.List.ID,
+			BoardID: resp.List.BoardID,
+			Name:    resp.List.Name,
+		},
+	}, nil
+}
+
+func (s *ListService) UpdateListName(ctx context.Context, req *pb.UpdateListNameRequest) (*pb.UpdateListNameResponse, error) {
+	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandlers.NewGrpcInternalError()
+	}
+
+	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
+	if !ok {
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	updateReq := &repositories.UpdateListNameRequest{
@@ -155,23 +168,23 @@ func (s *ListService) UpdateListName(ctx context.Context, req *pb.UpdateListName
 func (s *ListService) MoveListPosition(ctx context.Context, req *pb.MoveListPositionRequest) (*pb.MoveListPositionResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	moveListPositionReq := &repositories.MoveListPositionRequest{
-		ID:          req.ListID,
-		NewPosition: int64(req.NewPosition),
-		BoardID:     boardID,
-		UserID:      userID,
+		ID:       req.ListID,
+		Position: int64(req.Position),
+		BoardID:  boardID,
+		UserID:   userID,
 	}
 
 	if err := s.listRepo.MoveListPosition(moveListPositionReq); err != nil {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, err
 	}
 
 	return &pb.MoveListPositionResponse{
@@ -182,7 +195,7 @@ func (s *ListService) MoveListPosition(ctx context.Context, req *pb.MoveListPosi
 func (s *ListService) ArchiveList(ctx context.Context, req *pb.ArchiveListRequest) (*pb.ArchiveListResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	archiveListReq := &repositories.ArchiveListRequest{
@@ -202,7 +215,7 @@ func (s *ListService) ArchiveList(ctx context.Context, req *pb.ArchiveListReques
 func (s *ListService) RestoreList(ctx context.Context, req *pb.RestoreListRequest) (*pb.RestoreListResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	restoreReq := &repositories.RestoreListRequest{
@@ -222,12 +235,12 @@ func (s *ListService) RestoreList(ctx context.Context, req *pb.RestoreListReques
 func (s *ListService) DeleteList(ctx context.Context, req *pb.DeleteListRequest) (*pb.DeleteListResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	deleteReq := &repositories.DeleteListRequest{
