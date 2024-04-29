@@ -120,7 +120,6 @@ message GetBoardByIDResponse {
 message GetBoardListRequest {
     uint64 pageNumber = 1;
     uint64 pageSize = 2;
-    uint64 userID = 3;
 }
 
 message GetBoardListResponse {
@@ -164,13 +163,13 @@ message RemoveBoardUsersResponse {
     string message = 1;
 }
 
-message AssignBoardUserRoleRequest {
+message AssignBoardUsersRoleRequest {
     // uint64 boardID = 1;
     repeated uint64 userIDs = 1;
     string role = 2;
 }
 
-message AssignBoardUserRoleResponse {
+message AssignBoardUsersRoleResponse {
     string message = 1;
 }
 
@@ -257,7 +256,7 @@ service BoardService {
     rpc UpdateBoardName(UpdateBoardNameRequest) returns (UpdateBoardNameResponse);
     rpc AddBoardUsers(AddBoardUsersRequest) returns (AddBoardUsersResponse);
     rpc RemoveBoardUsers(RemoveBoardUsersRequest) returns (RemoveBoardUsersResponse);
-    rpc AssignBoardUserRole(AssignBoardUserRoleRequest) returns (AssignBoardUserRoleResponse);
+    rpc AssignBoardUsersRole(AssignBoardUsersRoleRequest) returns (AssignBoardUsersRoleResponse);
     rpc ChangeBoardOwner(ChangeBoardOwnerRequest) returns (ChangeBoardOwnerResponse);
     rpc ChangeBoardVisibility(ChangeBoardVisibilityRequest) returns (ChangeBoardVisibilityResponse);
     rpc AddLabel(AddLabelRequest) returns (AddLabelResponse);

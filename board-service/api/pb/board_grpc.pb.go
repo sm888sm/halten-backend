@@ -30,7 +30,7 @@ type BoardServiceClient interface {
 	UpdateBoardName(ctx context.Context, in *UpdateBoardNameRequest, opts ...grpc.CallOption) (*UpdateBoardNameResponse, error)
 	AddBoardUsers(ctx context.Context, in *AddBoardUsersRequest, opts ...grpc.CallOption) (*AddBoardUsersResponse, error)
 	RemoveBoardUsers(ctx context.Context, in *RemoveBoardUsersRequest, opts ...grpc.CallOption) (*RemoveBoardUsersResponse, error)
-	AssignBoardUserRole(ctx context.Context, in *AssignBoardUserRoleRequest, opts ...grpc.CallOption) (*AssignBoardUserRoleResponse, error)
+	AssignBoardUsersRole(ctx context.Context, in *AssignBoardUsersRoleRequest, opts ...grpc.CallOption) (*AssignBoardUsersRoleResponse, error)
 	ChangeBoardOwner(ctx context.Context, in *ChangeBoardOwnerRequest, opts ...grpc.CallOption) (*ChangeBoardOwnerResponse, error)
 	ChangeBoardVisibility(ctx context.Context, in *ChangeBoardVisibilityRequest, opts ...grpc.CallOption) (*ChangeBoardVisibilityResponse, error)
 	AddLabel(ctx context.Context, in *AddLabelRequest, opts ...grpc.CallOption) (*AddLabelResponse, error)
@@ -120,9 +120,9 @@ func (c *boardServiceClient) RemoveBoardUsers(ctx context.Context, in *RemoveBoa
 	return out, nil
 }
 
-func (c *boardServiceClient) AssignBoardUserRole(ctx context.Context, in *AssignBoardUserRoleRequest, opts ...grpc.CallOption) (*AssignBoardUserRoleResponse, error) {
-	out := new(AssignBoardUserRoleResponse)
-	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AssignBoardUserRole", in, out, opts...)
+func (c *boardServiceClient) AssignBoardUsersRole(ctx context.Context, in *AssignBoardUsersRoleRequest, opts ...grpc.CallOption) (*AssignBoardUsersRoleResponse, error) {
+	out := new(AssignBoardUsersRoleResponse)
+	err := c.cc.Invoke(ctx, "/boardpb.BoardService/AssignBoardUsersRole", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ type BoardServiceServer interface {
 	UpdateBoardName(context.Context, *UpdateBoardNameRequest) (*UpdateBoardNameResponse, error)
 	AddBoardUsers(context.Context, *AddBoardUsersRequest) (*AddBoardUsersResponse, error)
 	RemoveBoardUsers(context.Context, *RemoveBoardUsersRequest) (*RemoveBoardUsersResponse, error)
-	AssignBoardUserRole(context.Context, *AssignBoardUserRoleRequest) (*AssignBoardUserRoleResponse, error)
+	AssignBoardUsersRole(context.Context, *AssignBoardUsersRoleRequest) (*AssignBoardUsersRoleResponse, error)
 	ChangeBoardOwner(context.Context, *ChangeBoardOwnerRequest) (*ChangeBoardOwnerResponse, error)
 	ChangeBoardVisibility(context.Context, *ChangeBoardVisibilityRequest) (*ChangeBoardVisibilityResponse, error)
 	AddLabel(context.Context, *AddLabelRequest) (*AddLabelResponse, error)
@@ -243,8 +243,8 @@ func (UnimplementedBoardServiceServer) AddBoardUsers(context.Context, *AddBoardU
 func (UnimplementedBoardServiceServer) RemoveBoardUsers(context.Context, *RemoveBoardUsersRequest) (*RemoveBoardUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBoardUsers not implemented")
 }
-func (UnimplementedBoardServiceServer) AssignBoardUserRole(context.Context, *AssignBoardUserRoleRequest) (*AssignBoardUserRoleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AssignBoardUserRole not implemented")
+func (UnimplementedBoardServiceServer) AssignBoardUsersRole(context.Context, *AssignBoardUsersRoleRequest) (*AssignBoardUsersRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AssignBoardUsersRole not implemented")
 }
 func (UnimplementedBoardServiceServer) ChangeBoardOwner(context.Context, *ChangeBoardOwnerRequest) (*ChangeBoardOwnerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeBoardOwner not implemented")
@@ -424,20 +424,20 @@ func _BoardService_RemoveBoardUsers_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BoardService_AssignBoardUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AssignBoardUserRoleRequest)
+func _BoardService_AssignBoardUsersRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignBoardUsersRoleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BoardServiceServer).AssignBoardUserRole(ctx, in)
+		return srv.(BoardServiceServer).AssignBoardUsersRole(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/boardpb.BoardService/AssignBoardUserRole",
+		FullMethod: "/boardpb.BoardService/AssignBoardUsersRole",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BoardServiceServer).AssignBoardUserRole(ctx, req.(*AssignBoardUserRoleRequest))
+		return srv.(BoardServiceServer).AssignBoardUsersRole(ctx, req.(*AssignBoardUsersRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -608,8 +608,8 @@ var BoardService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BoardService_RemoveBoardUsers_Handler,
 		},
 		{
-			MethodName: "AssignBoardUserRole",
-			Handler:    _BoardService_AssignBoardUserRole_Handler,
+			MethodName: "AssignBoardUsersRole",
+			Handler:    _BoardService_AssignBoardUsersRole_Handler,
 		},
 		{
 			MethodName: "ChangeBoardOwner",

@@ -30,7 +30,7 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 			return
 		}
 
-		userID := (*claims)["userID"].(uint)
+		userID := (*claims)["userID"].(uint64)
 
 		userService, err := services.GetUserClient()
 		if err != nil {

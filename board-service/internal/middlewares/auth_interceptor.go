@@ -13,16 +13,19 @@ import (
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/helpers"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
 
 var (
 	checkRoleException = map[string]bool{
+		"/proto.BoardService/CreateBoard":          true,
 		"/proto.BoardService/GetBoardByID":         true,
 		"/proto.BoardService/GetBoardList":         true,
 		"/proto.BoardService/GetArchivedBoardList": true,
 		"/proto.BoardService/GetBoardMembers":      true,
-		"/proto.BoardService/CreateBoard":          true,
+
 		// Add other methods here...
 	}
 
@@ -30,7 +33,7 @@ var (
 		"/proto.BoardService/UpdateBoardName":       roles.AdminRole,
 		"/proto.BoardService/AddBoardUsers":         roles.AdminRole,
 		"/proto.BoardService/RemoveBoardUsers":      roles.AdminRole,
-		"/proto.BoardService/AssignBoardUserRole":   roles.AdminRole,
+		"/proto.BoardService/AssignBoardUsersRole":  roles.AdminRole,
 		"/proto.BoardService/ChangeBoardOwner":      roles.OwnerRole,
 		"/proto.BoardService/ChangeBoardVisibility": roles.AdminRole,
 		"/proto.BoardService/AddLabel":              roles.MemberRole,
@@ -58,7 +61,7 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 
 		requiredRole, ok := checkRole[info.FullMethod]
 		if !ok {
-			return nil, errorhandler.NewAPIError(httpcodes.ErrForbidden, "Invalid method")
+			return nil, status.Errorf(codes.Unavailable, errorhandler.NewAPIError(httpcodes.ErrForbidden, "Invalid method").Error())
 		}
 
 		authService, err := v.svc.GetAuthClient()
@@ -90,18 +93,6 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 		}); err != nil {
 			return nil, err
 		}
-
-		// TODO : Move checkVisibility to gateway
-
-		// if checkVisibility[info.FullMethod] {
-		// 	// Check the board's visibility
-		// 	if _, err := authService.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
-		// 		UserID:  userID,
-		// 		BoardID: boardID,
-		// 	}); err != nil {
-		// 		return nil, err
-		// 	}
-		// }
 	}
 
 	return handler(ctx, req)

@@ -15,6 +15,7 @@ import (
 
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
 	"github.com/sm888sm/halten-backend/common/errorhandler"
+	"github.com/sm888sm/halten-backend/common/helpers"
 
 	"github.com/sm888sm/halten-backend/common/messaging/rabbitmq/publishers"
 	"github.com/sm888sm/halten-backend/models"
@@ -35,9 +36,9 @@ func NewBoardService(repo repositories.BoardRepository, services *external_servi
 }
 
 func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoardRequest) (*pb_board.CreateBoardResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	userID, err := helpers.ExtractUserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	board := &models.Board{
@@ -118,9 +119,9 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 
 func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardByIDRequest) (*pb_board.GetBoardByIDResponse, error) {
 	// Extract the board ID from the context
-	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	boardID, err := helpers.ExtractBoardIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// Call the repository function
@@ -176,9 +177,9 @@ func (s *BoardService) GetBoardByID(ctx context.Context, req *pb_board.GetBoardB
 }
 
 func (s *BoardService) GetBoardList(ctx context.Context, req *pb_board.GetBoardListRequest) (*pb_board.GetBoardListResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	userID, err := helpers.ExtractUserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	boardList, err := s.boardRepo.GetBoardList(&repositories.GetBoardListRequest{
@@ -213,9 +214,9 @@ func (s *BoardService) GetBoardList(ctx context.Context, req *pb_board.GetBoardL
 	}, nil
 }
 func (s *BoardService) GetBoardMembers(ctx context.Context, req *pb_board.GetBoardMembersRequest) (*pb_board.GetBoardMembersResponse, error) {
-	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	boardID, err := helpers.ExtractBoardIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	repoReq := &repositories.GetBoardMembersRequest{
@@ -244,9 +245,9 @@ func (s *BoardService) GetBoardMembers(ctx context.Context, req *pb_board.GetBoa
 }
 
 func (s *BoardService) GetArchivedBoardList(ctx context.Context, req *pb_board.GetArchivedBoardListRequest) (*pb_board.GetArchivedBoardListResponse, error) {
-	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
-	if !ok {
-		return nil, errorhandler.NewGrpcInternalError()
+	userID, err := helpers.ExtractUserIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	boardList, err := s.boardRepo.GetArchivedBoardList(&repositories.GetArchivedBoardListRequest{
@@ -280,6 +281,8 @@ func (s *BoardService) GetArchivedBoardList(ctx context.Context, req *pb_board.G
 		},
 	}, nil
 }
+
+// Authorization Required
 
 func (s *BoardService) UpdateBoardName(ctx context.Context, req *pb_board.UpdateBoardNameRequest) (*pb_board.UpdateBoardNameResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
@@ -344,7 +347,7 @@ func (s *BoardService) RemoveBoardUsers(ctx context.Context, req *pb_board.Remov
 	}, nil
 }
 
-func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.AssignBoardUserRoleRequest) (*pb_board.AssignBoardUserRoleResponse, error) {
+func (s *BoardService) AssignBoardUsersRole(ctx context.Context, req *pb_board.AssignBoardUsersRoleRequest) (*pb_board.AssignBoardUsersRoleResponse, error) {
 	userID, ok := ctx.Value(contextkeys.UserIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandler.NewGrpcInternalError()
@@ -356,9 +359,10 @@ func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.As
 	}
 
 	// Call the repository function to assign the user role to the board
-	err := s.boardRepo.AssignBoardUserRole(&repositories.AssignBoardUserRoleRequest{
+	err := s.boardRepo.AssignBoardUsersRole(&repositories.AssignBoardUsersRoleRequest{
 		BoardID: boardID,
 		UserID:  userID,
+		UserIDs: req.UserIDs,
 		Role:    req.Role,
 	})
 	if err != nil {
@@ -366,7 +370,7 @@ func (s *BoardService) AssignBoardUserRole(ctx context.Context, req *pb_board.As
 	}
 
 	// Return a successful response
-	return &pb_board.AssignBoardUserRoleResponse{
+	return &pb_board.AssignBoardUsersRoleResponse{
 		Message: "User role assigned to the board successfully",
 	}, nil
 }

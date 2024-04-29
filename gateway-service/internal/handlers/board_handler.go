@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"strconv"
 
 	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
-	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
+	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/gin-gonic/gin"
@@ -15,425 +15,748 @@ import (
 	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 )
 
-type CreateBoardInput struct {
-	Name string `json:"name"`
-}
-
-type UpdateBoardInput struct {
-	Name string `json:"name"`
-}
-
-type AddBoardUsersInput struct {
-	UserIds []uint64 `json:"userIds"`
-}
-
-type RemoveBoardUsersInput struct {
-	UserIds []uint64 `json:"userIds"`
-}
-
-type ChangeBoardOwnerInput struct {
-	NewOwnerId uint64 `json:"newOwnerId"`
-}
-
 type BoardHandler struct {
 	services *external_services.Services
-}
-
-type AssignUserRoleInput struct {
-	UserId uint64 `json:"userId"`
-	Role   string `json:"role"`
 }
 
 func NewBoardHandler(services *external_services.Services) *BoardHandler {
 	return &BoardHandler{services: services}
 }
 
+type CreateBoardRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+/*
+********************
+* No Authorization *
+********************
+ */
+
 func (h *BoardHandler) CreateBoard(c *gin.Context) {
+	var req CreateBoardRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
 	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	var input CreateBoardInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
 	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
-	boardService, err := h.services.GetBoardClient()
+	grpcReq := &pb_board.CreateBoardRequest{Name: req.Name} // Convert the HTTP request to the gRPC request
+	res, err := boardClient.CreateBoard(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.CreateBoardRequest{
-		UserID: userID,
-		Name:   input.Name,
-	}
-	_, err = boardService.CreateBoard(ctx, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
+	c.JSON(http.StatusOK, res)
+}
 
-	responsehandler.Success(c, http.StatusOK, "Board created successfully", nil)
+type GetBoardByIDUri struct {
+	BoardID uint64 `json:"boardID" binding:"required"`
 }
 
 func (h *BoardHandler) GetBoardByID(c *gin.Context) {
-	userID, err := getUserID(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+	var req GetBoardByIDUri
+	if err := c.ShouldBindUri(&req); err != nil {
+		responsehandler.Error(c, http.StatusBadRequest, "Invalid board ID", []responsehandler.ErrorResponse{{Message: err.Error()}})
 		return
 	}
 
-	boardIDStr := c.Param("board-id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	if err := h.CheckVisibility(c.Request.Context(), userID, req.BoardID); err != nil {
+		errorhandler.HandleError(c, err)
 		return
 	}
 
 	boardService, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
 		return
 	}
 
-	req := &pb_board.GetBoardByIDRequest{BoardID: boardID, UserID: userID}
-	resp, err := boardService.GetBoardByID(ctx, req)
+	ctx := c.Request.Context()
+
+	grpcReq := &pb_board.GetBoardByIDRequest{} // Convert the HTTP request to the gRPC request
+
+	resp, err := boardService.GetBoardByID(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board fetched successfully", resp)
+	responsehandler.Success(c, http.StatusOK, "Board retrieved successfully", resp)
+}
+
+type GetBoardListQuery struct {
+	PageNumber uint64 `form:"pageNumber,default=1"`
+	PageSize   uint64 `form:"pageSize,default=10"`
 }
 
 func (h *BoardHandler) GetBoardList(c *gin.Context) {
+	var query GetBoardListQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
 	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
 		return
 	}
 
-	pageNumberStr, pageSizeStr := c.DefaultQuery("page_number", "1"), c.DefaultQuery("page_size", "10")
-
-	pageNumber, err := strconv.ParseUint(pageNumberStr, 10, 64)
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid page number"))
-		return
-	}
-
-	pageSize, err := strconv.ParseUint(pageSizeStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid page size"))
-		return
-	}
-
-	md := metadata.Pairs("userID", fmt.Sprintf("%d", userID))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
-
-	boardService, err := h.services.GetBoardClient()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
 	req := &pb_board.GetBoardListRequest{
-		UserID:     userID,
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
+		PageNumber: query.PageNumber,
+		PageSize:   query.PageSize,
 	}
-	resp, err := boardService.GetBoardList(ctx, req)
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	res, err := boardClient.GetBoardList(ctx, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	pagination := responsehandler.Pagination{
-		CurrentPage:  int(resp.Pagination.CurrentPage),
-		TotalPages:   int(resp.Pagination.TotalItems),
-		ItemsPerPage: int(resp.Pagination.ItemsPerPage),
-		TotalItems:   int(resp.Pagination.TotalItems),
-		HasMore:      resp.Pagination.HasMore,
-	}
-
-	responsehandler.SuccessWithPagination(c, http.StatusOK, "Boards fetched successfully", resp, &pagination)
+	responsehandler.SuccessWithPagination(c, http.StatusOK, "Board list retrieved successfully", res.Boards, res.Pagination)
 }
 
-func (h *BoardHandler) UpdateBoard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	userId := user.(*pb_user.User).UserID
-
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
-		return
-	}
-
-	var input UpdateBoardInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	req := &pb_board.UpdateBoardRequest{
-		Id:     boardID,
-		UserId: userId,
-		Name:   input.Name,
-	}
-
-	_, err = boardService.UpdateBoard(c, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	responsehandler.Success(c, http.StatusOK, "Board updated successfully", nil)
+type GetBoardMembersQuery struct {
+	BoardID uint64 `json:"boardID" binding:"required"`
 }
 
-func (h *BoardHandler) DeleteBoard(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
+	var query GetBoardMembersQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	userId := user.(*pb_user.User).UserID
-
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
 		return
 	}
 
-	boardService, err := h.services.GetBoardClient()
+	if err := h.CheckVisibility(c.Request.Context(), userID, query.BoardID); err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.DeleteBoardRequest{
-		Id:     boardID,
-		UserId: userId,
-	}
-	_, err = boardService.DeleteBoard(c, req)
+	req := &pb_board.GetBoardMembersRequest{}
+
+	md := metadata.Pairs("boardID", strconv.FormatUint(query.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	res, err := boardClient.GetBoardMembers(ctx, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board deleted successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "Board members retrieved successfully", res)
+}
+
+type GetArchivedBoardListQuery struct {
+	PageNumber uint64 `form:"pageNumber,default=1"`
+	PageSize   uint64 `form:"pageSize,default=10"`
+}
+
+func (h *BoardHandler) GetArchivedBoardList(c *gin.Context) {
+	var query GetArchivedBoardListQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		responsehandler.Error(c, http.StatusInternalServerError, "Internal server error", []responsehandler.ErrorResponse{{Message: err.Error()}})
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	req := &pb_board.GetArchivedBoardListRequest{
+		PageNumber: query.PageNumber,
+		PageSize:   query.PageSize,
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	res, err := boardClient.GetArchivedBoardList(ctx, req)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.SuccessWithPagination(c, http.StatusOK, "Archived board list retrieved successfully", res.Boards, res.Pagination)
+}
+
+/*
+****************************
+* Authorization Required *
+****************************
+ */
+
+type UpdateBoardNameUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type UpdateBoardNameBody struct {
+	Name string `json:"name" binding:"required"`
+}
+
+func (h *BoardHandler) UpdateBoardName(c *gin.Context) {
+	var uri UpdateBoardNameUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	var body UpdateBoardNameBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.UpdateBoardNameRequest{Name: body.Name} // Convert the HTTP request to the gRPC request
+
+	res, err := boardClient.UpdateBoardName(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Board name updated successfully", res)
+}
+
+type AddBoardUsersUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type AddBoardUsersBody struct {
+	UserIDs []uint64 `json:"user_ids" binding:"required"`
+	Role    string   `json:"role" binding:"required"`
 }
 
 func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	var uri AddBoardUsersUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
-	userId := user.(*pb_user.User).UserID
+	var body AddBoardUsersBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
 
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	// Get the user ID
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	var input AddBoardUsersInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid user ID list"))
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.AddUsersRequest{
-		Id:      boardID,
-		UserId:  userId,
-		UserIds: input.UserIds,
+	// Create metadata with userID and boardID
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	// Create the gRPC request
+	grpcReq := &pb_board.AddBoardUsersRequest{
+		UserIDs: body.UserIDs,
+		Role:    body.Role,
 	}
-	_, err = boardService.AddBoardUser(c, req)
+
+	// Use the new context with metadata
+	res, err := boardClient.AddBoardUsers(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Users added to board successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "Users added to board successfully", res)
+}
+
+type RemoveBoardUsersUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type RemoveBoardUsersBody struct {
+	UserIDs []uint64 `json:"user_ids" binding:"required"`
 }
 
 func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	var uri RemoveBoardUsersUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
-	userId := user.(*pb_user.User).UserID
+	var body RemoveBoardUsersBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
 
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	// Get the user ID
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	var input RemoveBoardUsersInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.RemoveUsersRequest{
-		Id:      boardID,
-		UserId:  userId,
-		UserIds: input.UserIds,
+	// Create metadata with userID and boardID
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	// Create the gRPC request
+	grpcReq := &pb_board.RemoveBoardUsersRequest{
+		UserIDs: body.UserIDs,
 	}
-	_, err = boardService.RemoveBoardUser(c, req)
+
+	// Use the new context with metadata
+	res, err := boardClient.RemoveBoardUsers(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Users removed from board successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "Users removed from board successfully", res)
 }
 
-func (h *BoardHandler) GetBoardUsers(c *gin.Context) {
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	req := &pb_board.GetBoardUsersRequest{
-		Id: boardID,
-	}
-	resp, err := boardService.GetBoardUsers(c, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
-		return
-	}
-
-	responsehandler.Success(c, http.StatusOK, "Board users retrieved successfully", resp.Users)
+type AssignBoardUsersRoleUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
 }
 
-func (h *BoardHandler) AssignBoardUserRole(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+type AssignBoardUsersRoleBody struct {
+	UserIDs []uint64 `json:"user_ids" binding:"required"`
+	Role    string   `json:"role" binding:"required"`
+}
+
+func (h *BoardHandler) AssignBoardUsersRole(c *gin.Context) {
+	var uri AssignBoardUsersRoleUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
-	userId := user.(*pb_user.User).UserID
+	var body AssignBoardUsersRoleBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
 
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	var input AssignUserRoleInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.AssignUserRoleRequest{
-		Id:           boardID,
-		UserId:       userId,
-		AssignUserId: input.UserId,
-		Role:         input.Role,
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.AssignBoardUsersRoleRequest{
+		UserIDs: body.UserIDs,
+		Role:    body.Role,
 	}
-	_, err = boardService.AssignBoardUserRole(c, req)
+
+	res, err := boardClient.AssignBoardUsersRole(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "User role assigned successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "User roles assigned successfully", res)
+}
+
+type ChangeBoardOwnerUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type ChangeBoardOwnerBody struct {
+	NewOwnerID uint64 `json:"new_owner_id" binding:"required"`
 }
 
 func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+	var uri ChangeBoardOwnerUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
 		return
 	}
 
-	userId := user.(*pb_user.User).UserID
+	var body ChangeBoardOwnerBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
 
-	boardIDStr := c.Param("id")
-	boardID, err := strconv.ParseUint(boardIDStr, 10, 64)
+	userID, err := getUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid board ID"))
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	var input ChangeBoardOwnerInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, errorhandler.NewHttpBadRequestError())
-		return
-	}
-
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	req := &pb_board.ChangeBoardOwnerRequest{
-		Id:         boardID,
-		UserId:     userId,
-		NewOwnerId: input.NewOwnerId,
-	}
-	_, err = boardService.ChangeBoardOwner(c, req)
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.ChangeBoardOwnerRequest{NewOwnerID: body.NewOwnerID}
+
+	res, err := boardClient.ChangeBoardOwner(ctx, grpcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())
+		errorhandler.HandleError(c, err)
 		return
 	}
 
-	responsehandler.Success(c, http.StatusOK, "Board owner changed successfully", nil)
+	responsehandler.Success(c, http.StatusOK, "Board owner changed successfully", res)
+}
+
+type ChangeBoardVisibilityUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type ChangeBoardVisibilityBody struct {
+	Visibility string `json:"visibility" binding:"required"`
+}
+
+func (h *BoardHandler) ChangeBoardVisibility(c *gin.Context) {
+	var uri ChangeBoardVisibilityUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	var body ChangeBoardVisibilityBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.ChangeBoardVisibilityRequest{Visibility: body.Visibility}
+
+	res, err := boardClient.ChangeBoardVisibility(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Board visibility changed successfully", res)
+}
+
+type AddLabelUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type AddLabelBody struct {
+	Name  string `json:"name" binding:"required"`
+	Color string `json:"color" binding:"required"`
+}
+
+func (h *BoardHandler) AddLabel(c *gin.Context) {
+	var uri AddLabelUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	var body AddLabelBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.AddLabelRequest{
+		Name:  body.Name,
+		Color: body.Color,
+	}
+
+	res, err := boardClient.AddLabel(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Label added successfully", res)
+}
+
+type RemoveLabelUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+type RemoveLabelBody struct {
+	LabelID uint64 `json:"labelID" binding:"required"`
+}
+
+func (h *BoardHandler) RemoveLabel(c *gin.Context) {
+	var uri RemoveLabelUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	var body RemoveLabelBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.RemoveLabelRequest{LabelID: body.LabelID}
+
+	res, err := boardClient.RemoveLabel(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Label removed successfully", res)
+}
+
+type ArchiveBoardUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+func (h *BoardHandler) ArchiveBoard(c *gin.Context) {
+	var uri ArchiveBoardUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.ArchiveBoardRequest{}
+
+	res, err := boardClient.ArchiveBoard(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Board archived status updated successfully", res)
+}
+
+type RestoreBoardUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+func (h *BoardHandler) RestoreBoard(c *gin.Context) {
+	var uri RestoreBoardUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.RestoreBoardRequest{}
+
+	res, err := boardClient.RestoreBoard(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Board restored successfully", res)
+}
+
+type DeleteBoardUri struct {
+	BoardID uint64 `uri:"boardID" binding:"required"`
+}
+
+func (h *BoardHandler) DeleteBoard(c *gin.Context) {
+	var uri DeleteBoardUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandler.HandleError(c, errorhandler.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcReq := &pb_board.DeleteBoardRequest{}
+
+	res, err := boardClient.DeleteBoard(ctx, grpcReq)
+	if err != nil {
+		errorhandler.HandleError(c, err)
+		return
+	}
+
+	responsehandler.Success(c, http.StatusOK, "Board deleted successfully", res)
+}
+
+// Helpers
+
+func (h *BoardHandler) CheckVisibility(ctx context.Context, userID, boardID uint64) error {
+	authService, err := h.services.GetAuthClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = authService.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
+		UserID:  userID,
+		BoardID: boardID,
+	})
+
+	return err
 }

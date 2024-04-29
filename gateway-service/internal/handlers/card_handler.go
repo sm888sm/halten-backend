@@ -127,7 +127,7 @@ func (h *CardHandler) GetCardsByBoard(c *gin.Context) {
 		return
 	}
 
-	req := &pb_card.GetCardsByBoardRequest{BoardID: boardID}
+	req := &pb_card.GetCardsByBoardRequest{}
 	resp, err := cardService.GetCardsByBoard(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandler.NewHttpInternalError())

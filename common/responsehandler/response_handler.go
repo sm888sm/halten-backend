@@ -7,7 +7,7 @@ import (
 type Meta struct {
 	Status     int         `json:"status"`
 	Message    string      `json:"message"`
-	Pagination *Pagination `json:"pagination,omitempty"`
+	Pagination interface{} `json:"pagination,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -34,7 +34,7 @@ func Success(c *gin.Context, status int, message string, data interface{}) {
 	})
 }
 
-func SuccessWithPagination(c *gin.Context, status int, message string, data interface{}, pagination *Pagination) {
+func SuccessWithPagination(c *gin.Context, status int, message string, data interface{}, pagination interface{}) {
 	c.JSON(status, gin.H{
 		"meta": Meta{
 			Status:     status,

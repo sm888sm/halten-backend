@@ -9,6 +9,8 @@ import (
 	"github.com/sm888sm/halten-backend/common/errorhandler"
 	"github.com/sm888sm/halten-backend/common/helpers"
 	"github.com/sm888sm/halten-backend/models"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"gorm.io/gorm"
 )
@@ -28,8 +30,6 @@ func (r *GormBoardRepository) CreateBoard(req *CreateBoardRequest) (*CreateBoard
 		if err := tx.Create(&board).Error; err != nil {
 			return errorhandler.NewGrpcInternalError()
 		}
-
-		// TODO : Create list, card and label
 
 		boardMember := models.BoardMember{
 			UserID:  req.Board.UserID,
@@ -173,7 +173,7 @@ func (r *GormBoardRepository) UpdateBoardName(req *UpdateBoardNameRequest) error
 			return errorhandler.NewGrpcInternalError()
 		}
 		if result.RowsAffected == 0 {
-			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
+			return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
 		}
 		return nil
 	})
@@ -223,7 +223,7 @@ func (r *GormBoardRepository) AddBoardUsers(req *AddBoardUsersRequest) error {
 	}
 
 	if len(existingUserIDs) != len(req.UserIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found")
+		return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found").Error())
 	}
 
 	// Check if any user is already a member of the board
@@ -263,7 +263,7 @@ func (r *GormBoardRepository) RemoveBoardUsers(req *RemoveBoardUsersRequest) err
 	}
 
 	if len(existingUserIDs) != len(req.UserIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found")
+		return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found").Error())
 	}
 
 	// Check if all users are members of the board
@@ -273,7 +273,7 @@ func (r *GormBoardRepository) RemoveBoardUsers(req *RemoveBoardUsersRequest) err
 	}
 
 	if len(existingBoardMemberIDs) != len(req.UserIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrConflict, "One or more users are not members of the board")
+		return status.Errorf(codes.AlreadyExists, errorhandler.NewAPIError(httpcodes.ErrConflict, "One or more users are not members of the board").Error())
 	}
 
 	// Start the transaction
@@ -286,7 +286,7 @@ func (r *GormBoardRepository) RemoveBoardUsers(req *RemoveBoardUsersRequest) err
 	})
 }
 
-func (r *GormBoardRepository) AssignBoardUserRole(req *AssignBoardUserRoleRequest) error {
+func (r *GormBoardRepository) AssignBoardUsersRole(req *AssignBoardUsersRoleRequest) error {
 	// Check if all users exist and are members of the board
 	var existingBoardMemberIDs []uint
 	if err := r.db.Model(&models.BoardMember{}).Where("board_id = ? AND user_id IN ?", req.BoardID, req.UserIDs).Select("id").Find(&existingBoardMemberIDs).Error; err != nil {
@@ -294,7 +294,7 @@ func (r *GormBoardRepository) AssignBoardUserRole(req *AssignBoardUserRoleReques
 	}
 
 	if len(existingBoardMemberIDs) != len(req.UserIDs) {
-		return errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found or not members of the board")
+		return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "One or more users not found or not members of the board").Error())
 	}
 
 	// Check if the current user has permission to assign roles
@@ -305,7 +305,7 @@ func (r *GormBoardRepository) AssignBoardUserRole(req *AssignBoardUserRoleReques
 
 	// Check if the current user can assign the requested role
 	if !canAssignRole(currentUserRole.Role, req.Role) {
-		return errorhandler.NewAPIError(httpcodes.ErrForbidden, "You don't have permission to assign this role")
+		return status.Errorf(codes.PermissionDenied, errorhandler.NewAPIError(httpcodes.ErrForbidden, "You don't have permission to assign this role").Error())
 	}
 
 	// Start the transaction
@@ -324,7 +324,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(req *ChangeBoardOwnerRequest) err
 		var newUser models.User
 		if err := tx.First(&newUser, req.NewOwnerID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found")
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -333,7 +333,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(req *ChangeBoardOwnerRequest) err
 		var newOwnerMember models.BoardMember
 		if err := tx.Where("board_id = ? AND user_id = ?", req.BoardID, req.NewOwnerID).First(&newOwnerMember).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrForbidden, "User is not a member of the board")
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrForbidden, "User is not a member of the board").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -342,7 +342,7 @@ func (r *GormBoardRepository) ChangeBoardOwner(req *ChangeBoardOwnerRequest) err
 		var currentOwnerMember models.BoardMember
 		if err := tx.Where("board_id = ? AND user_id = ? AND role = ?", req.BoardID, req.CurrentOwnerID, roles.OwnerRole).First(&currentOwnerMember).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrForbidden, "Current user is not the owner of the board")
+				return status.Errorf(codes.PermissionDenied, errorhandler.NewAPIError(httpcodes.ErrForbidden, "Current user is not the owner of the board").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -367,7 +367,7 @@ func (r *GormBoardRepository) ChangeBoardVisibility(req *ChangeBoardVisibilityRe
 		var board models.Board
 		if err := tx.First(&board, req.BoardID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found")
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -375,7 +375,7 @@ func (r *GormBoardRepository) ChangeBoardVisibility(req *ChangeBoardVisibilityRe
 		// Validate the visibility value
 		validVisibilities := []string{"private", "public", "team"}
 		if !helpers.Contains(validVisibilities, req.Visibility) {
-			return errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid visibility value")
+			return status.Errorf(codes.InvalidArgument, errorhandler.NewAPIError(httpcodes.ErrBadRequest, "Invalid visibility value").Error())
 		}
 
 		// Update the visibility of the board
@@ -416,7 +416,7 @@ func (r *GormBoardRepository) RemoveLabel(req *RemoveLabelRequest) error {
 		var label models.Label
 		if err := tx.Where("id = ? AND board_id = ?", req.LabelID, req.BoardID).First(&label).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Label not found")
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Label not found").Error())
 			}
 			return errorhandler.NewGrpcInternalError()
 		}
@@ -449,7 +449,10 @@ func (r *GormBoardRepository) GetArchivedBoardList(req *GetArchivedBoardListRequ
 			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, true).
 			Offset(offset).Limit(pageSize).
 			Find(&boards).Error; err != nil {
-			return err
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
+			}
+			return errorhandler.NewGrpcInternalError()
 		}
 
 		// Map the boards to the BoardMetaDTO struct
@@ -463,10 +466,12 @@ func (r *GormBoardRepository) GetArchivedBoardList(req *GetArchivedBoardListRequ
 		}
 
 		// Count the total items
-		tx.Model(&models.Board{}).
+		if err := tx.Model(&models.Board{}).
 			Joins("JOIN board_members ON board_members.board_id = boards.id").
 			Where("board_members.user_id = ? AND boards.is_archived = ?", req.UserID, false).
-			Count(&totalItems)
+			Count(&totalItems).Error; err != nil {
+			return errorhandler.NewGrpcInternalError()
+		}
 
 		return nil
 	})
@@ -515,7 +520,7 @@ func (r *GormBoardRepository) DeleteBoard(req *DeleteBoardRequest) error {
 			return errorhandler.NewGrpcInternalError()
 		}
 		if result.RowsAffected == 0 {
-			return errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found or not archived")
+			return status.Errorf(codes.NotFound, errorhandler.NewAPIError(httpcodes.ErrNotFound, "Board not found or not archived").Error())
 		}
 		return nil
 	})

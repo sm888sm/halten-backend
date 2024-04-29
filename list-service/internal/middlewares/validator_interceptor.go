@@ -21,35 +21,35 @@ func NewValidatorInterceptor(db *gorm.DB) *ValidatorInterceptor {
 func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	switch info.FullMethod {
 	case "/proto.ListService/CreateList":
-		if err := validateCreateListRequest(ctx, req.(*pb_list.CreateListRequest)); err != nil {
+		if err := validateCreateListRequest(req.(*pb_list.CreateListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/GetListByID":
-		if err := validateGetListByIDRequest(ctx, req.(*pb_list.GetListByIDRequest)); err != nil {
+		if err := validateGetListByIDRequest(req.(*pb_list.GetListByIDRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/GetListsByBoard":
-		if err := validateGetListsByBoardRequest(ctx, req.(*pb_list.GetListsByBoardRequest)); err != nil {
+		if err := validateGetListsByBoardRequest(req.(*pb_list.GetListsByBoardRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/UpdateListName":
-		if err := validateUpdateListNameRequest(ctx, req.(*pb_list.UpdateListNameRequest)); err != nil {
+		if err := validateUpdateListNameRequest(req.(*pb_list.UpdateListNameRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/MoveListPosition":
-		if err := validateMoveListPositionRequest(ctx, req.(*pb_list.MoveListPositionRequest)); err != nil {
+		if err := validateMoveListPositionRequest(req.(*pb_list.MoveListPositionRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/ArchiveList":
-		if err := validateArchiveListRequest(ctx, req.(*pb_list.ArchiveListRequest)); err != nil {
+		if err := validateArchiveListRequest(req.(*pb_list.ArchiveListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/RestoreList":
-		if err := validateRestoreListRequest(ctx, req.(*pb_list.RestoreListRequest)); err != nil {
+		if err := validateRestoreListRequest(req.(*pb_list.RestoreListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.ListService/DeleteList":
-		if err := validateDeleteListRequest(ctx, req.(*pb_list.DeleteListRequest)); err != nil {
+		if err := validateDeleteListRequest(req.(*pb_list.DeleteListRequest)); err != nil {
 			return nil, err
 		}
 	}
@@ -57,11 +57,8 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 	return handler(ctx, req)
 }
 
-func validateCreateListRequest(ctx context.Context, req *pb_list.CreateListRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateCreateListRequest(req *pb_list.CreateListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.List.Name == "" {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -70,32 +67,23 @@ func validateCreateListRequest(ctx context.Context, req *pb_list.CreateListReque
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetListByIDRequest(ctx context.Context, req *pb_list.GetListByIDRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetListByIDRequest(_ *pb_list.GetListByIDRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetListsByBoardRequest(ctx context.Context, req *pb_list.GetListsByBoardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetListsByBoardRequest(_ *pb_list.GetListsByBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateUpdateListNameRequest(ctx context.Context, req *pb_list.UpdateListNameRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateUpdateListNameRequest(req *pb_list.UpdateListNameRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.Name == "" {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -105,14 +93,11 @@ func validateUpdateListNameRequest(ctx context.Context, req *pb_list.UpdateListN
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateMoveListPositionRequest(ctx context.Context, req *pb_list.MoveListPositionRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateMoveListPositionRequest(req *pb_list.MoveListPositionRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.NewPosition == 0 {
 		fieldErrors["NewPosition"] = errorhandler.FieldError{
@@ -121,32 +106,23 @@ func validateMoveListPositionRequest(ctx context.Context, req *pb_list.MoveListP
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateArchiveListRequest(ctx context.Context, req *pb_list.ArchiveListRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateArchiveListRequest(_ *pb_list.ArchiveListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRestoreListRequest(ctx context.Context, req *pb_list.RestoreListRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateRestoreListRequest(_ *pb_list.RestoreListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateDeleteListRequest(ctx context.Context, req *pb_list.DeleteListRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateDeleteListRequest(_ *pb_list.DeleteListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }

@@ -22,55 +22,55 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 	switch info.FullMethod {
 	// Board Service
 	case "/proto.BoardService/CreateBoard":
-		if err := validateCreateBoardRequest(ctx, req.(*pb_board.CreateBoardRequest)); err != nil {
+		if err := validateCreateBoardRequest(req.(*pb_board.CreateBoardRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/GetBoardByID":
-		if err := validateGetBoardByIDRequest(ctx, req.(*pb_board.GetBoardByIDRequest)); err != nil {
+		if err := validateGetBoardByIDRequest(req.(*pb_board.GetBoardByIDRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/GetBoardList":
-		if err := validateGetBoardListRequest(ctx, req.(*pb_board.GetBoardListRequest)); err != nil {
+		if err := validateGetBoardListRequest(req.(*pb_board.GetBoardListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/GetBoardMembers":
-		if err := validateGetBoardMembersRequest(ctx, req.(*pb_board.GetBoardMembersRequest)); err != nil {
+		if err := validateGetBoardMembersRequest(req.(*pb_board.GetBoardMembersRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/UpdateBoardName":
-		if err := validateUpdateBoardNameRequest(ctx, req.(*pb_board.UpdateBoardNameRequest)); err != nil {
+		if err := validateUpdateBoardNameRequest(req.(*pb_board.UpdateBoardNameRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/AddBoardUsers":
-		if err := validateAddBoardUsersRequest(ctx, req.(*pb_board.AddBoardUsersRequest)); err != nil {
+		if err := validateAddBoardUsersRequest(req.(*pb_board.AddBoardUsersRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/RemoveBoardUsers":
-		if err := validateRemoveBoardUsersRequest(ctx, req.(*pb_board.RemoveBoardUsersRequest)); err != nil {
+		if err := validateRemoveBoardUsersRequest(req.(*pb_board.RemoveBoardUsersRequest)); err != nil {
 			return nil, err
 		}
-	case "/proto.BoardService/AssignBoardUserRole":
-		if err := validateAssignBoardUserRoleRequest(ctx, req.(*pb_board.AssignBoardUserRoleRequest)); err != nil {
+	case "/proto.BoardService/AssignBoardUsersRole":
+		if err := validateAssignBoardUsersRoleRequest(req.(*pb_board.AssignBoardUsersRoleRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/ChangeBoardOwner":
-		if err := validateChangeBoardOwnerRequest(ctx, req.(*pb_board.ChangeBoardOwnerRequest)); err != nil {
+		if err := validateChangeBoardOwnerRequest(req.(*pb_board.ChangeBoardOwnerRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/GetArchivedBoardList":
-		if err := validateGetArchivedBoardListRequest(ctx, req.(*pb_board.GetArchivedBoardListRequest)); err != nil {
+		if err := validateGetArchivedBoardListRequest(req.(*pb_board.GetArchivedBoardListRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/RestoreBoard":
-		if err := validateRestoreBoardRequest(ctx, req.(*pb_board.RestoreBoardRequest)); err != nil {
+		if err := validateRestoreBoardRequest(req.(*pb_board.RestoreBoardRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/ArchiveBoard":
-		if err := validateArchiveBoardRequest(ctx, req.(*pb_board.ArchiveBoardRequest)); err != nil {
+		if err := validateArchiveBoardRequest(req.(*pb_board.ArchiveBoardRequest)); err != nil {
 			return nil, err
 		}
 	case "/proto.BoardService/DeleteBoard":
-		if err := validateDeleteBoardRequest(ctx, req.(*pb_board.DeleteBoardRequest)); err != nil {
+		if err := validateDeleteBoardRequest(req.(*pb_board.DeleteBoardRequest)); err != nil {
 			return nil, err
 		}
 	}
@@ -80,11 +80,8 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 
 // Board Service
 
-func validateCreateBoardRequest(ctx context.Context, req *pb_board.CreateBoardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateCreateBoardRequest(req *pb_board.CreateBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.Name == "" {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -93,41 +90,29 @@ func validateCreateBoardRequest(ctx context.Context, req *pb_board.CreateBoardRe
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardByIDRequest(ctx context.Context, req *pb_board.GetBoardByIDRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetBoardByIDRequest(_ *pb_board.GetBoardByIDRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardListRequest(ctx context.Context, req *pb_board.GetBoardListRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateGetBoardListRequest(_ *pb_board.GetBoardListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetBoardMembersRequest(ctx context.Context, req *pb_board.GetBoardMembersRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateGetBoardMembersRequest(_ *pb_board.GetBoardMembersRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateUpdateBoardNameRequest(ctx context.Context, req *pb_board.UpdateBoardNameRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateUpdateBoardNameRequest(req *pb_board.UpdateBoardNameRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.Name == "" {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -137,14 +122,11 @@ func validateUpdateBoardNameRequest(ctx context.Context, req *pb_board.UpdateBoa
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAddBoardUsersRequest(ctx context.Context, req *pb_board.AddBoardUsersRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateAddBoardUsersRequest(req *pb_board.AddBoardUsersRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if len(req.UserIDs) == 0 {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -153,14 +135,11 @@ func validateAddBoardUsersRequest(ctx context.Context, req *pb_board.AddBoardUse
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRemoveBoardUsersRequest(ctx context.Context, req *pb_board.RemoveBoardUsersRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateRemoveBoardUsersRequest(req *pb_board.RemoveBoardUsersRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if len(req.UserIDs) == 0 {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -169,14 +148,11 @@ func validateRemoveBoardUsersRequest(ctx context.Context, req *pb_board.RemoveBo
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAssignBoardUserRoleRequest(ctx context.Context, req *pb_board.AssignBoardUserRoleRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateAssignBoardUsersRoleRequest(req *pb_board.AssignBoardUsersRoleRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if len(req.UserIDs) == 0 {
 		fieldErrors["Name"] = errorhandler.FieldError{
@@ -185,14 +161,11 @@ func validateAssignBoardUserRoleRequest(ctx context.Context, req *pb_board.Assig
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateChangeBoardOwnerRequest(ctx context.Context, req *pb_board.ChangeBoardOwnerRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateChangeBoardOwnerRequest(req *pb_board.ChangeBoardOwnerRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.NewOwnerID == 0 {
 		fieldErrors["NewOwnerID"] = errorhandler.FieldError{
@@ -201,43 +174,31 @@ func validateChangeBoardOwnerRequest(ctx context.Context, req *pb_board.ChangeBo
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetArchivedBoardListRequest(ctx context.Context, req *pb_board.GetArchivedBoardListRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateGetArchivedBoardListRequest(_ *pb_board.GetArchivedBoardListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRestoreBoardRequest(ctx context.Context, req *pb_board.RestoreBoardRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateRestoreBoardRequest(_ *pb_board.RestoreBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateArchiveBoardRequest(ctx context.Context, req *pb_board.ArchiveBoardRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateArchiveBoardRequest(_ *pb_board.ArchiveBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
-func validateDeleteBoardRequest(ctx context.Context, req *pb_board.DeleteBoardRequest) *errorhandler.APIError {
-	fieldErrors, err := validateUserAndBoardID(ctx)
-	if err != nil {
-		return err
-	}
+func validateDeleteBoardRequest(_ *pb_board.DeleteBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }

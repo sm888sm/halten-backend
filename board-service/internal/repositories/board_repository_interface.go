@@ -57,7 +57,7 @@ type RemoveBoardUsersRequest struct {
 	UserIDs []uint64
 }
 
-type AssignBoardUserRoleRequest struct {
+type AssignBoardUsersRoleRequest struct {
 	BoardID uint64
 	UserID  uint64
 	UserIDs []uint64
@@ -117,7 +117,7 @@ type BoardRepository interface {
 	UpdateBoardName(req *UpdateBoardNameRequest) error
 	AddBoardUsers(req *AddBoardUsersRequest) error
 	RemoveBoardUsers(req *RemoveBoardUsersRequest) error
-	AssignBoardUserRole(req *AssignBoardUserRoleRequest) error
+	AssignBoardUsersRole(req *AssignBoardUsersRoleRequest) error
 	ChangeBoardOwner(req *ChangeBoardOwnerRequest) error
 	ChangeBoardVisibility(req *ChangeBoardVisibilityRequest) error
 	AddLabel(req *AddLabelRequest) (*models.Label, error)

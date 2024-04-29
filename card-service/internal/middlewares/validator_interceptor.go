@@ -23,102 +23,102 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 	// Card Service
 	case "/proto.CardService/CreateCard":
 		req := req.(*pb_card.CreateCardRequest)
-		if err := validateCreateCardRequest(ctx, req); err != nil {
+		if err := validateCreateCardRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/GetCardByID":
 		req := req.(*pb_card.GetCardByIDRequest)
-		if err := validateGetCardByIDRequest(ctx, req); err != nil {
+		if err := validateGetCardByIDRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/GetCardsByList":
 		req := req.(*pb_card.GetCardsByListRequest)
-		if err := validateGetCardsByListRequest(ctx, req); err != nil {
+		if err := validateGetCardsByListRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/GetCardsByBoard":
 		req := req.(*pb_card.GetCardsByBoardRequest)
-		if err := validateGetCardsByBoardRequest(ctx, req); err != nil {
+		if err := validateGetCardsByBoardRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/MoveCardPosition":
 		req := req.(*pb_card.MoveCardPositionRequest)
-		if err := validateMoveCardPositionRequest(ctx, req); err != nil {
+		if err := validateMoveCardPositionRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/UpdateCardName":
 		req := req.(*pb_card.UpdateCardNameRequest)
-		if err := validateUpdateCardNameRequest(ctx, req); err != nil {
+		if err := validateUpdateCardNameRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/UpdateCardDescription":
 		req := req.(*pb_card.UpdateCardDescriptionRequest)
-		if err := validateUpdateCardDescriptionRequest(ctx, req); err != nil {
+		if err := validateUpdateCardDescriptionRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/AddCardLabel":
 		req := req.(*pb_card.AddCardLabelRequest)
-		if err := validateAddCardLabelRequest(ctx, req); err != nil {
+		if err := validateAddCardLabelRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/RemoveCardLabel":
 		req := req.(*pb_card.RemoveCardLabelRequest)
-		if err := validateRemoveCardLabelRequest(ctx, req); err != nil {
+		if err := validateRemoveCardLabelRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/SetCardDates":
 		req := req.(*pb_card.SetCardDatesRequest)
-		if err := validateSetCardDatesRequest(ctx, req); err != nil {
+		if err := validateSetCardDatesRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/MarkCardComplete":
 		req := req.(*pb_card.MarkCardCompleteRequest)
-		if err := validateMarkCardCompleteRequest(ctx, req); err != nil {
+		if err := validateMarkCardCompleteRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/AddCardAttachment":
 		req := req.(*pb_card.AddCardAttachmentRequest)
-		if err := validateAddCardAttachmentRequest(ctx, req); err != nil {
+		if err := validateAddCardAttachmentRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/RemoveCardAttachment":
 		req := req.(*pb_card.RemoveCardAttachmentRequest)
-		if err := validateRemoveCardAttachmentRequest(ctx, req); err != nil {
+		if err := validateRemoveCardAttachmentRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/AddCardComment":
 		req := req.(*pb_card.AddCardCommentRequest)
-		if err := validateAddCardCommentRequest(ctx, req); err != nil {
+		if err := validateAddCardCommentRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/RemoveCardComment":
 		req := req.(*pb_card.RemoveCardCommentRequest)
-		if err := validateRemoveCardCommentRequest(ctx, req); err != nil {
+		if err := validateRemoveCardCommentRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/AddCardMembers":
 		req := req.(*pb_card.AddCardMembersRequest)
-		if err := validateAddCardMembersRequest(ctx, req); err != nil {
+		if err := validateAddCardMembersRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/RemoveCardMembers":
 		req := req.(*pb_card.RemoveCardMembersRequest)
-		if err := validateRemoveCardMembersRequest(ctx, req); err != nil {
+		if err := validateRemoveCardMembersRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/ArchiveCard":
 		req := req.(*pb_card.ArchiveCardRequest)
-		if err := validateArchiveCardRequest(ctx, req); err != nil {
+		if err := validateArchiveCardRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/RestoreCard":
 		req := req.(*pb_card.RestoreCardRequest)
-		if err := validateRestoreCardRequest(ctx, req); err != nil {
+		if err := validateRestoreCardRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/DeleteCard":
 		req := req.(*pb_card.DeleteCardRequest)
-		if err := validateDeleteCardRequest(ctx, req); err != nil {
+		if err := validateDeleteCardRequest(req); err != nil {
 			return nil, err
 		}
 	}
@@ -126,11 +126,8 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 	return handler(ctx, req)
 }
 
-func validateCreateCardRequest(ctx context.Context, req *pb_card.CreateCardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateCreateCardRequest(req *pb_card.CreateCardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.ListID == 0 {
 		fieldErrors["ListID"] = errorhandler.FieldError{
@@ -147,14 +144,11 @@ func validateCreateCardRequest(ctx context.Context, req *pb_card.CreateCardReque
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateGetCardByIDRequest(ctx context.Context, req *pb_card.GetCardByIDRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetCardByIDRequest(req *pb_card.GetCardByIDRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -164,15 +158,12 @@ func validateGetCardByIDRequest(ctx context.Context, req *pb_card.GetCardByIDReq
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
-func validateGetCardsByListRequest(ctx context.Context, req *pb_card.GetCardsByListRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetCardsByListRequest(req *pb_card.GetCardsByListRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.ListID == 0 {
 		fieldErrors["ListID"] = errorhandler.FieldError{
@@ -182,25 +173,19 @@ func validateGetCardsByListRequest(ctx context.Context, req *pb_card.GetCardsByL
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
-func validateGetCardsByBoardRequest(ctx context.Context, req *pb_card.GetCardsByBoardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateGetCardsByBoardRequest(_ *pb_card.GetCardsByBoardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 
 }
 
-func validateMoveCardPositionRequest(ctx context.Context, req *pb_card.MoveCardPositionRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateMoveCardPositionRequest(req *pb_card.MoveCardPositionRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -218,14 +203,11 @@ func validateMoveCardPositionRequest(ctx context.Context, req *pb_card.MoveCardP
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateUpdateCardNameRequest(ctx context.Context, req *pb_card.UpdateCardNameRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateUpdateCardNameRequest(req *pb_card.UpdateCardNameRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -243,14 +225,11 @@ func validateUpdateCardNameRequest(ctx context.Context, req *pb_card.UpdateCardN
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateUpdateCardDescriptionRequest(ctx context.Context, req *pb_card.UpdateCardDescriptionRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateUpdateCardDescriptionRequest(req *pb_card.UpdateCardDescriptionRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
 			Code:    fielderrors.ErrRequired,
@@ -267,14 +246,11 @@ func validateUpdateCardDescriptionRequest(ctx context.Context, req *pb_card.Upda
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAddCardLabelRequest(ctx context.Context, req *pb_card.AddCardLabelRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateAddCardLabelRequest(req *pb_card.AddCardLabelRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -292,14 +268,11 @@ func validateAddCardLabelRequest(ctx context.Context, req *pb_card.AddCardLabelR
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRemoveCardLabelRequest(ctx context.Context, req *pb_card.RemoveCardLabelRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateRemoveCardLabelRequest(req *pb_card.RemoveCardLabelRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -317,14 +290,11 @@ func validateRemoveCardLabelRequest(ctx context.Context, req *pb_card.RemoveCard
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateSetCardDatesRequest(ctx context.Context, req *pb_card.SetCardDatesRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateSetCardDatesRequest(req *pb_card.SetCardDatesRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -334,14 +304,11 @@ func validateSetCardDatesRequest(ctx context.Context, req *pb_card.SetCardDatesR
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateMarkCardCompleteRequest(ctx context.Context, req *pb_card.MarkCardCompleteRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateMarkCardCompleteRequest(req *pb_card.MarkCardCompleteRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -351,14 +318,11 @@ func validateMarkCardCompleteRequest(ctx context.Context, req *pb_card.MarkCardC
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAddCardAttachmentRequest(ctx context.Context, req *pb_card.AddCardAttachmentRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateAddCardAttachmentRequest(req *pb_card.AddCardAttachmentRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -376,14 +340,11 @@ func validateAddCardAttachmentRequest(ctx context.Context, req *pb_card.AddCardA
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRemoveCardAttachmentRequest(ctx context.Context, req *pb_card.RemoveCardAttachmentRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateRemoveCardAttachmentRequest(req *pb_card.RemoveCardAttachmentRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -401,14 +362,11 @@ func validateRemoveCardAttachmentRequest(ctx context.Context, req *pb_card.Remov
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAddCardCommentRequest(ctx context.Context, req *pb_card.AddCardCommentRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateAddCardCommentRequest(req *pb_card.AddCardCommentRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -426,14 +384,11 @@ func validateAddCardCommentRequest(ctx context.Context, req *pb_card.AddCardComm
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRemoveCardCommentRequest(ctx context.Context, req *pb_card.RemoveCardCommentRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateRemoveCardCommentRequest(req *pb_card.RemoveCardCommentRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -451,14 +406,11 @@ func validateRemoveCardCommentRequest(ctx context.Context, req *pb_card.RemoveCa
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateAddCardMembersRequest(ctx context.Context, req *pb_card.AddCardMembersRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateAddCardMembersRequest(req *pb_card.AddCardMembersRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -476,14 +428,11 @@ func validateAddCardMembersRequest(ctx context.Context, req *pb_card.AddCardMemb
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRemoveCardMembersRequest(ctx context.Context, req *pb_card.RemoveCardMembersRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateRemoveCardMembersRequest(req *pb_card.RemoveCardMembersRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -501,14 +450,11 @@ func validateRemoveCardMembersRequest(ctx context.Context, req *pb_card.RemoveCa
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateArchiveCardRequest(ctx context.Context, req *pb_card.ArchiveCardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateArchiveCardRequest(req *pb_card.ArchiveCardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -518,14 +464,11 @@ func validateArchiveCardRequest(ctx context.Context, req *pb_card.ArchiveCardReq
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateRestoreCardRequest(ctx context.Context, req *pb_card.RestoreCardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateRestoreCardRequest(req *pb_card.RestoreCardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -535,14 +478,11 @@ func validateRestoreCardRequest(ctx context.Context, req *pb_card.RestoreCardReq
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateDeleteCardRequest(ctx context.Context, req *pb_card.DeleteCardRequest) *errorhandler.APIError {
-	fieldErrors, apiErr := validateUserAndBoardID(ctx)
-	if apiErr != nil {
-		return apiErr
-	}
+func validateDeleteCardRequest(req *pb_card.DeleteCardRequest) error {
+	fieldErrors := make(map[string]errorhandler.FieldError)
 
 	if req.CardID == 0 {
 		fieldErrors["CardID"] = errorhandler.FieldError{
@@ -552,5 +492,5 @@ func validateDeleteCardRequest(ctx context.Context, req *pb_card.DeleteCardReque
 		}
 	}
 
-	return errorhandler.CreateAPIErrorFromFieldErrors(fieldErrors)
+	return errorhandler.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }

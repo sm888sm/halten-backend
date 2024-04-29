@@ -59,13 +59,13 @@ func NewAPIError(status int, message string, errors ...FieldError) *APIError {
 	}
 }
 
-func CreateAPIErrorFromFieldErrors(fieldErrors map[string]FieldError) *APIError {
+func CreateGrpcErrorFromFieldErrors(fieldErrors map[string]FieldError) error {
 	if len(fieldErrors) > 0 {
 		errorsSlice := make([]FieldError, 0, len(fieldErrors))
 		for _, err := range fieldErrors {
 			errorsSlice = append(errorsSlice, err)
 		}
-		return NewAPIError(http.StatusBadRequest, "Invalid request parameters", errorsSlice...)
+		return status.Errorf(codes.InvalidArgument, NewAPIError(http.StatusBadRequest, "Invalid request parameters", errorsSlice...).Error())
 	}
 	return nil
 }
