@@ -71,9 +71,9 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 		if err := validateSetCardDatesRequest(req); err != nil {
 			return nil, err
 		}
-	case "/proto.CardService/MarkCardComplete":
-		req := req.(*pb_card.MarkCardCompleteRequest)
-		if err := validateMarkCardCompleteRequest(req); err != nil {
+	case "/proto.CardService/ToggleCardCompleted":
+		req := req.(*pb_card.ToggleCardCompletedRequest)
+		if err := validateToggleCardCompletedRequest(req); err != nil {
 			return nil, err
 		}
 	case "/proto.CardService/AddCardAttachment":
@@ -307,7 +307,7 @@ func validateSetCardDatesRequest(req *pb_card.SetCardDatesRequest) error {
 	return errorhandlers.CreateGrpcErrorFromFieldErrors(fieldErrors)
 }
 
-func validateMarkCardCompleteRequest(req *pb_card.MarkCardCompleteRequest) error {
+func validateToggleCardCompletedRequest(req *pb_card.ToggleCardCompletedRequest) error {
 	fieldErrors := make(map[string]errorhandlers.FieldError)
 
 	if req.CardID == 0 {

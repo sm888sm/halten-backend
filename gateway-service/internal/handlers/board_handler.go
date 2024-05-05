@@ -34,6 +34,8 @@ type CreateBoardRequest struct {
 }
 
 func (h *BoardHandler) CreateBoard(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var req CreateBoardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
@@ -53,7 +55,7 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.CreateBoardRequest{Name: req.Name} // Convert the HTTP request to the gRPC request
 	res, err := boardClient.CreateBoard(ctx, grpcReq)
@@ -62,7 +64,7 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 		return
 	}
 
-	responsehandlers.Success(c, http.StatusOK, "Board created successfully", res)
+	responsehandlers.Success(c, http.StatusOK, "Board created successfully", res.Board)
 }
 
 type GetBoardByIDUri struct {
@@ -70,6 +72,8 @@ type GetBoardByIDUri struct {
 }
 
 func (h *BoardHandler) GetBoardByID(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri GetBoardByIDUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -82,23 +86,23 @@ func (h *BoardHandler) GetBoardByID(c *gin.Context) {
 		return
 	}
 
-	if err := h.CheckVisibility(c.Request.Context(), userID, uri.BoardID); err != nil {
+	if err := h.CheckVisibility(ctx, userID, uri.BoardID); err != nil {
 		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewHttpInternalError())
 		return
 	}
 
 	md := metadata.Pairs("boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.GetBoardByIDRequest{} // Convert the HTTP request to the gRPC request
 
-	resp, err := boardService.GetBoardByID(ctx, grpcReq)
+	resp, err := boardClient.GetBoardByID(ctx, grpcReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
@@ -113,6 +117,8 @@ type GetBoardListQuery struct {
 }
 
 func (h *BoardHandler) GetBoardList(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var query GetBoardListQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request query"))
@@ -137,7 +143,7 @@ func (h *BoardHandler) GetBoardList(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	res, err := boardClient.GetBoardList(ctx, req)
 	if err != nil {
@@ -153,6 +159,8 @@ type GetBoardMembersUri struct {
 }
 
 func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri GetBoardMembersUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, err)
@@ -165,7 +173,7 @@ func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
 		return
 	}
 
-	if err := h.CheckVisibility(c.Request.Context(), userID, uri.BoardID); err != nil {
+	if err := h.CheckVisibility(ctx, userID, uri.BoardID); err != nil {
 		errorhandlers.HandleError(c, err)
 		return
 	}
@@ -179,7 +187,7 @@ func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
 	req := &pb_board.GetBoardMembersRequest{}
 
 	md := metadata.Pairs("boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	res, err := boardClient.GetBoardMembers(ctx, req)
 	if err != nil {
@@ -187,7 +195,7 @@ func (h *BoardHandler) GetBoardMembers(c *gin.Context) {
 		return
 	}
 
-	responsehandlers.Success(c, http.StatusOK, "Board members retrieved successfully", res)
+	responsehandlers.Success(c, http.StatusOK, "Board members retrieved successfully", res.Members)
 }
 
 type GetArchivedBoardListQuery struct {
@@ -196,6 +204,8 @@ type GetArchivedBoardListQuery struct {
 }
 
 func (h *BoardHandler) GetArchivedBoardList(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var query GetArchivedBoardListQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request query"))
@@ -220,7 +230,7 @@ func (h *BoardHandler) GetArchivedBoardList(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	res, err := boardClient.GetArchivedBoardList(ctx, req)
 	if err != nil {
@@ -246,6 +256,8 @@ type UpdateBoardNameBody struct {
 }
 
 func (h *BoardHandler) UpdateBoardName(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri UpdateBoardNameUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -271,9 +283,9 @@ func (h *BoardHandler) UpdateBoardName(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	grpcReq := &pb_board.UpdateBoardNameRequest{Name: body.Name} // Convert the HTTP request to the gRPC request
+	grpcReq := &pb_board.UpdateBoardNameRequest{Name: body.Name}
 
 	res, err := boardClient.UpdateBoardName(ctx, grpcReq)
 	if err != nil {
@@ -294,6 +306,8 @@ type AddBoardUsersBody struct {
 }
 
 func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri AddBoardUsersUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -319,17 +333,14 @@ func (h *BoardHandler) AddBoardUsers(c *gin.Context) {
 		return
 	}
 
-	// Create metadata with userID and boardID
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	// Create the gRPC request
 	grpcReq := &pb_board.AddBoardUsersRequest{
 		UserIDs: body.UserIDs,
 		Role:    body.Role,
 	}
 
-	// Use the new context with metadata
 	res, err := boardClient.AddBoardUsers(ctx, grpcReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
@@ -348,6 +359,8 @@ type RemoveBoardUsersBody struct {
 }
 
 func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri RemoveBoardUsersUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -375,7 +388,7 @@ func (h *BoardHandler) RemoveBoardUsers(c *gin.Context) {
 
 	// Create metadata with userID and boardID
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// Create the gRPC request
 	grpcReq := &pb_board.RemoveBoardUsersRequest{
@@ -402,6 +415,8 @@ type AssignBoardUsersRoleBody struct {
 }
 
 func (h *BoardHandler) AssignBoardUsersRole(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri AssignBoardUsersRoleUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -427,7 +442,7 @@ func (h *BoardHandler) AssignBoardUsersRole(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.AssignBoardUsersRoleRequest{
 		UserIDs: body.UserIDs,
@@ -452,6 +467,8 @@ type ChangeBoardOwnerBody struct {
 }
 
 func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri ChangeBoardOwnerUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -477,7 +494,7 @@ func (h *BoardHandler) ChangeBoardOwner(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.ChangeBoardOwnerRequest{NewOwnerID: body.NewOwnerID}
 
@@ -499,6 +516,8 @@ type ChangeBoardVisibilityBody struct {
 }
 
 func (h *BoardHandler) ChangeBoardVisibility(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri ChangeBoardVisibilityUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -524,7 +543,7 @@ func (h *BoardHandler) ChangeBoardVisibility(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.ChangeBoardVisibilityRequest{Visibility: body.Visibility}
 
@@ -547,6 +566,8 @@ type AddLabelBody struct {
 }
 
 func (h *BoardHandler) AddLabel(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri AddLabelUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -572,7 +593,7 @@ func (h *BoardHandler) AddLabel(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.AddLabelRequest{
 		Name:  body.Name,
@@ -597,6 +618,8 @@ type RemoveLabelBody struct {
 }
 
 func (h *BoardHandler) RemoveLabel(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri RemoveLabelUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -622,7 +645,7 @@ func (h *BoardHandler) RemoveLabel(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.RemoveLabelRequest{LabelID: body.LabelID}
 
@@ -640,6 +663,8 @@ type ArchiveBoardUri struct {
 }
 
 func (h *BoardHandler) ArchiveBoard(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri ArchiveBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -659,7 +684,7 @@ func (h *BoardHandler) ArchiveBoard(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.ArchiveBoardRequest{}
 
@@ -677,6 +702,8 @@ type RestoreBoardUri struct {
 }
 
 func (h *BoardHandler) RestoreBoard(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri RestoreBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -696,7 +723,7 @@ func (h *BoardHandler) RestoreBoard(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.RestoreBoardRequest{}
 
@@ -714,6 +741,8 @@ type DeleteBoardUri struct {
 }
 
 func (h *BoardHandler) DeleteBoard(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var uri DeleteBoardUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
@@ -733,7 +762,7 @@ func (h *BoardHandler) DeleteBoard(c *gin.Context) {
 	}
 
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(uri.BoardID, 10))
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcReq := &pb_board.DeleteBoardRequest{}
 
@@ -749,12 +778,12 @@ func (h *BoardHandler) DeleteBoard(c *gin.Context) {
 // Helpers
 
 func (h *BoardHandler) CheckVisibility(ctx context.Context, userID, boardID uint64) error {
-	authService, err := h.services.GetAuthClient()
+	authClient, err := h.services.GetAuthClient()
 	if err != nil {
 		return err
 	}
 
-	_, err = authService.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
+	_, err = authClient.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
 		UserID:  userID,
 		BoardID: boardID,
 	})

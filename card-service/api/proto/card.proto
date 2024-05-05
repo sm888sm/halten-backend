@@ -70,15 +70,12 @@ message Comment {
 }
 
 message CreateCardRequest {
-    uint64 cardID  = 1;
-    uint64 listID  = 3;
-    string name = 4;
+    uint64 listID  = 1;
+    string name = 2;
 }
 
 message CreateCardResponse {
-    uint64 cardID  = 1;
-    uint64 listID  = 2;
-    string name = 4;
+    Card card = 1;
 }
 
 message GetCardByIDRequest {
@@ -111,7 +108,7 @@ message UpdateCardNameRequest {
 }
 
 message UpdateCardNameResponse {
-    bool message = 1;
+    string message = 1;
 }
 
 
@@ -121,7 +118,7 @@ message UpdateCardDescriptionRequest {
 }
 
 message UpdateCardDescriptionResponse {
-    bool message = 1;
+    string message = 1;
 }
 
 message MoveCardPositionRequest {
@@ -137,11 +134,10 @@ message MoveCardPositionResponse {
 
 message DeleteCardRequest {
     uint64 cardID  = 1;
-    uint64 listID  = 2;
 }
 
 message DeleteCardResponse {
-    bool message = 1;
+    string message = 1;
 }
 
 message AddCardLabelRequest {
@@ -172,11 +168,11 @@ message SetCardDatesResponse {
     string message = 1;
 }
 
-message MarkCardCompleteRequest {
+message ToggleCardCompletedRequest {
     uint64 cardID  = 1;
 }
 
-message MarkCardCompleteResponse {
+message ToggleCardCompletedResponse {
     string message = 1;
 }
 
@@ -263,13 +259,14 @@ service CardService {
     rpc GetCardByID(GetCardByIDRequest) returns (GetCardByIDResponse) {}
     rpc GetCardsByList(GetCardsByListRequest) returns (GetCardsByListResponse) {}
     rpc GetCardsByBoard(GetCardsByBoardRequest) returns (GetCardsByBoardResponse) {}
+    // TODO : Add GetArchivedCardsByBoard
     rpc MoveCardPosition(MoveCardPositionRequest) returns (MoveCardPositionResponse) {}
     rpc UpdateCardName(UpdateCardNameRequest) returns (UpdateCardNameResponse) {}
     rpc UpdateCardDescription(UpdateCardDescriptionRequest) returns (UpdateCardDescriptionResponse) {}
     rpc AddCardLabel(AddCardLabelRequest) returns (AddCardLabelResponse) {}
     rpc RemoveCardLabel(RemoveCardLabelRequest) returns (RemoveCardLabelResponse) {}
     rpc SetCardDates(SetCardDatesRequest) returns (SetCardDatesResponse) {}
-    rpc MarkCardComplete(MarkCardCompleteRequest) returns (MarkCardCompleteResponse) {}
+    rpc ToggleCardCompleted(ToggleCardCompletedRequest) returns (ToggleCardCompletedResponse) {}
     rpc AddCardAttachment(AddCardAttachmentRequest) returns (AddCardAttachmentResponse) {}
     rpc RemoveCardAttachment(RemoveCardAttachmentRequest) returns (RemoveCardAttachmentResponse) {}
     rpc AddCardComment(AddCardCommentRequest) returns (AddCardCommentResponse) {}

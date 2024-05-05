@@ -2,13 +2,13 @@ package middlewares
 
 import (
 	"context"
+	"net/http"
 
 	external_services "github.com/sm888sm/halten-backend/board-service/external/services"
 
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb"
 
 	"github.com/sm888sm/halten-backend/common/constants/contextkeys"
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roles"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"github.com/sm888sm/halten-backend/common/helpers"
@@ -61,12 +61,12 @@ func (v *AuthInterceptor) AuthInterceptor(ctx context.Context, req interface{}, 
 
 		requiredRole, ok := checkRole[info.FullMethod]
 		if !ok {
-			return nil, status.Errorf(codes.Unavailable, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Invalid method").Error())
+			return nil, status.Errorf(codes.Unavailable, errorhandlers.NewAPIError(http.StatusNotImplemented, "Invalid method").Error())
 		}
 
 		authService, err := v.svc.GetAuthClient()
 		if err != nil {
-			return nil, errorhandlers.NewGrpcBadRequestError()
+			return nil, errorhandlers.NewGrpcInternalError()
 		}
 
 		// Extract userID and boardID from meta

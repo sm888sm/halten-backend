@@ -8,11 +8,11 @@ message List {
     uint64 listID = 1;
     uint64 boardID = 2;
     string name = 3;
-    int32 position = 4;
+    int64 position = 4;
 }
 
 message CreateListRequest {
-    List list = 1;
+    string name = 1;
 }
 
 message CreateListResponse {
@@ -81,6 +81,7 @@ service ListService {
     rpc CreateList(CreateListRequest) returns (CreateListResponse) {}
     rpc GetListByID(GetListByIDRequest) returns (GetListByIDResponse) {}
     rpc GetListsByBoard(GetListsByBoardRequest) returns (GetListsByBoardResponse) {}
+    // TODO : Add GetArchivedListsByBoard
     rpc UpdateListName(UpdateListNameRequest) returns (UpdateListNameResponse) {}
     rpc MoveListPosition(MoveListPositionRequest) returns (MoveListPositionResponse) {}
     rpc ArchiveList(ArchiveListRequest) returns (ArchiveListResponse) {}

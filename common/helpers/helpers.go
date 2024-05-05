@@ -2,9 +2,9 @@ package helpers
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -12,7 +12,7 @@ import (
 )
 
 func extractIDFromContext(ctx context.Context, key string, errMsg string) (uint64, error) {
-	errInvalid := status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(httpcodes.ErrBadRequest, errMsg).Error())
+	errInvalid := status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(http.StatusBadRequest, errMsg).Error())
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {

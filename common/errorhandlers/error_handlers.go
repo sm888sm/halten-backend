@@ -74,8 +74,12 @@ func NewGrpcInternalError() error {
 	return status.Errorf(codes.Internal, NewAPIError(http.StatusInternalServerError, "Internal server error").Error())
 }
 
-func NewGrpcBadRequestError() error {
-	return status.Errorf(codes.Internal, NewAPIError(http.StatusInternalServerError, "Bad Request").Error())
+func NewGrpcBadRequestError(message string) error {
+	return status.Errorf(codes.Internal, NewAPIError(http.StatusBadRequest, message).Error())
+}
+
+func NewGrpcNotFoundError(message string) error {
+	return status.Errorf(codes.NotFound, NewAPIError(http.StatusNotFound, message).Error())
 }
 
 func NewHttpInternalError() *APIError {

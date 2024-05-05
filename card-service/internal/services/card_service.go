@@ -37,9 +37,12 @@ func (s *CardService) CreateCard(ctx context.Context, req *pb_card.CreateCardReq
 		return nil, err
 	}
 	return &pb_card.CreateCardResponse{
-		CardID: uint64(repoRes.Card.ID),
-		Name:   card.Name,
-		ListID: uint64(repoRes.Card.ListID),
+		Card: &pb_card.Card{
+			CardID:   repoRes.Card.ID,
+			Name:     repoRes.Card.Name,
+			ListID:   repoRes.Card.ListID,
+			Position: repoRes.Card.Position,
+		},
 	}, nil
 }
 
@@ -194,7 +197,9 @@ func (s *CardService) UpdateCardDescription(ctx context.Context, req *pb_card.Up
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.UpdateCardDescriptionResponse{}, nil
+	return &pb_card.UpdateCardDescriptionResponse{
+		Message: "Card description updated",
+	}, nil
 }
 
 func (s *CardService) AddCardLabel(ctx context.Context, req *pb_card.AddCardLabelRequest) (*pb_card.AddCardLabelResponse, error) {
@@ -212,7 +217,9 @@ func (s *CardService) AddCardLabel(ctx context.Context, req *pb_card.AddCardLabe
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.AddCardLabelResponse{}, nil
+	return &pb_card.AddCardLabelResponse{
+		Message: "Label added to card",
+	}, nil
 }
 
 func (s *CardService) RemoveCardLabel(ctx context.Context, req *pb_card.RemoveCardLabelRequest) (*pb_card.RemoveCardLabelResponse, error) {
@@ -230,7 +237,9 @@ func (s *CardService) RemoveCardLabel(ctx context.Context, req *pb_card.RemoveCa
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.RemoveCardLabelResponse{}, nil
+	return &pb_card.RemoveCardLabelResponse{
+		Message: "Label removed from card",
+	}, nil
 }
 
 func (s *CardService) SetCardDates(ctx context.Context, req *pb_card.SetCardDatesRequest) (*pb_card.SetCardDatesResponse, error) {
@@ -252,25 +261,29 @@ func (s *CardService) SetCardDates(ctx context.Context, req *pb_card.SetCardDate
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.SetCardDatesResponse{}, nil
+	return &pb_card.SetCardDatesResponse{
+		Message: "Card dates updated",
+	}, nil
 }
 
-func (s *CardService) MarkCardComplete(ctx context.Context, req *pb_card.MarkCardCompleteRequest) (*pb_card.MarkCardCompleteResponse, error) {
+func (s *CardService) ToggleCardCompleted(ctx context.Context, req *pb_card.ToggleCardCompletedRequest) (*pb_card.ToggleCardCompletedResponse, error) {
 	boardID, ok := ctx.Value(contextkeys.BoardIDKey{}).(uint64)
 	if !ok {
 		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
-	repoReq := &repositories.MarkCardCompleteRequest{
+	repoReq := &repositories.ToggleCardCompletedRequest{
 		CardID:  req.CardID,
 		BoardID: boardID,
 	}
 
-	err := s.cardRepo.MarkCardComplete(repoReq)
+	err := s.cardRepo.ToggleCardCompleted(repoReq)
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.MarkCardCompleteResponse{}, nil
+	return &pb_card.ToggleCardCompletedResponse{
+		Message: "Card completion status toggled",
+	}, nil
 }
 
 func (s *CardService) AddCardAttachment(ctx context.Context, req *pb_card.AddCardAttachmentRequest) (*pb_card.AddCardAttachmentResponse, error) {
@@ -289,7 +302,9 @@ func (s *CardService) AddCardAttachment(ctx context.Context, req *pb_card.AddCar
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.AddCardAttachmentResponse{}, nil
+	return &pb_card.AddCardAttachmentResponse{
+		Message: "Attachment added to card",
+	}, nil
 }
 
 func (s *CardService) RemoveCardAttachment(ctx context.Context, req *pb_card.RemoveCardAttachmentRequest) (*pb_card.RemoveCardAttachmentResponse, error) {
@@ -308,7 +323,9 @@ func (s *CardService) RemoveCardAttachment(ctx context.Context, req *pb_card.Rem
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.RemoveCardAttachmentResponse{}, nil
+	return &pb_card.RemoveCardAttachmentResponse{
+		Message: "Attachment removed from card",
+	}, nil
 }
 
 func (s *CardService) AddCardComment(ctx context.Context, req *pb_card.AddCardCommentRequest) (*pb_card.AddCardCommentResponse, error) {
@@ -338,7 +355,9 @@ func (s *CardService) AddCardComment(ctx context.Context, req *pb_card.AddCardCo
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.AddCardCommentResponse{}, nil
+	return &pb_card.AddCardCommentResponse{
+		Message: "Comment added to card",
+	}, nil
 }
 
 func (s *CardService) RemoveCardComment(ctx context.Context, req *pb_card.RemoveCardCommentRequest) (*pb_card.RemoveCardCommentResponse, error) {
@@ -363,7 +382,9 @@ func (s *CardService) RemoveCardComment(ctx context.Context, req *pb_card.Remove
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.RemoveCardCommentResponse{}, nil
+	return &pb_card.RemoveCardCommentResponse{
+		Message: "Comment removed from card",
+	}, nil
 }
 
 func (s *CardService) AddCardMembers(ctx context.Context, req *pb_card.AddCardMembersRequest) (*pb_card.AddCardMembersResponse, error) {
@@ -383,7 +404,9 @@ func (s *CardService) AddCardMembers(ctx context.Context, req *pb_card.AddCardMe
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.AddCardMembersResponse{}, nil
+	return &pb_card.AddCardMembersResponse{
+		Message: "Members added to card",
+	}, nil
 }
 
 func (s *CardService) RemoveCardMembers(ctx context.Context, req *pb_card.RemoveCardMembersRequest) (*pb_card.RemoveCardMembersResponse, error) {
@@ -402,7 +425,9 @@ func (s *CardService) RemoveCardMembers(ctx context.Context, req *pb_card.Remove
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.RemoveCardMembersResponse{}, nil
+	return &pb_card.RemoveCardMembersResponse{
+		Message: "Members removed from card",
+	}, nil
 }
 
 func (s *CardService) ArchiveCard(ctx context.Context, req *pb_card.ArchiveCardRequest) (*pb_card.ArchiveCardResponse, error) {
@@ -420,7 +445,9 @@ func (s *CardService) ArchiveCard(ctx context.Context, req *pb_card.ArchiveCardR
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.ArchiveCardResponse{}, nil
+	return &pb_card.ArchiveCardResponse{
+		Message: "Card archived",
+	}, nil
 }
 
 func (s *CardService) RestoreCard(ctx context.Context, req *pb_card.RestoreCardRequest) (*pb_card.RestoreCardResponse, error) {
@@ -439,7 +466,9 @@ func (s *CardService) RestoreCard(ctx context.Context, req *pb_card.RestoreCardR
 		return nil, err
 	}
 
-	return &pb_card.RestoreCardResponse{}, nil
+	return &pb_card.RestoreCardResponse{
+		Message: "Card restored",
+	}, nil
 }
 
 func (s *CardService) DeleteCard(ctx context.Context, req *pb_card.DeleteCardRequest) (*pb_card.DeleteCardResponse, error) {
@@ -457,5 +486,7 @@ func (s *CardService) DeleteCard(ctx context.Context, req *pb_card.DeleteCardReq
 	if err != nil {
 		return nil, err
 	}
-	return &pb_card.DeleteCardResponse{}, nil
+	return &pb_card.DeleteCardResponse{
+		Message: "Card deleted",
+	}, nil
 }

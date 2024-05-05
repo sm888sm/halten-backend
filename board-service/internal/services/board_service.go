@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"strconv"
 
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb_board "github.com/sm888sm/halten-backend/board-service/api/pb"
@@ -55,16 +57,17 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 		return nil, err
 	}
 
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(repoRes.Board.ID, 10))
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	listService, err := s.services.GetListClient()
 	if err != nil {
 		return nil, errorhandlers.NewGrpcInternalError()
 	}
 
 	listReq := &pb_list.CreateListRequest{
-		List: &pb_list.List{
-			BoardID: repoRes.Board.ID,
-			Name:    "Default List",
-		}}
+		Name: "Default List",
+	}
 
 	listRes, err := listService.CreateList(ctx, listReq)
 	if err != nil {
@@ -112,8 +115,14 @@ func (s *BoardService) CreateBoard(ctx context.Context, req *pb_board.CreateBoar
 	}
 
 	return &pb_board.CreateBoardResponse{
-		BoardID: board.ID,
-		Name:    board.Name,
+		Board: &pb_board.Board{
+			Name:       repoRes.Board.Name,
+			BoardID:    repoRes.Board.ID,
+			UserID:     repoRes.Board.UserID,
+			Visibility: repoRes.Board.Visibility,
+			CreatedAt:  timestamppb.New(repoRes.Board.CreatedAt),
+			UpdatedAt:  timestamppb.New(repoRes.Board.UpdatedAt),
+		},
 	}, nil
 }
 

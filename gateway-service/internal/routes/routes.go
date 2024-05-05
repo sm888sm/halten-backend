@@ -13,7 +13,7 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 	authHandler := handlers.NewAuthHandler(svc)
 	boardHandler := handlers.NewBoardHandler(svc)
 	listHandler := handlers.NewListHandler(svc)
-	// cardHandler := handlers.NewCardHandler(svc)
+	cardHandler := handlers.NewCardHandler(svc)
 
 	userRoutes := r.Group("/user")
 	userRoutes.POST("/create", userHandler.CreateUser)
@@ -71,14 +71,30 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 		listRoutes.DELETE("/:listID", listHandler.DeleteList)
 	}
 
-	// cardRoutes := r.Group("/cards")
-	// cardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
-	// {
-	// 	cardRoutes.POST("/", cardHandler.CreateCard)
-	// 	cardRoutes.GET("/board/:board-id", cardHandler.GetCardsByBoard)
-	// 	cardRoutes.GET("/list/:list-id", cardHandler.GetCardsByList)
-	// 	cardRoutes.GET("/:card-id", cardHandler.GetCardByID)
-	// 	cardRoutes.DELETE("/:card-id", cardHandler.DeleteCard)
-	// 	cardRoutes.PUT("/:card-id/position", cardHandler.MoveCardPosition)
-	// }
+	cardRoutes := r.Group("/cards")
+	cardRoutes.Use(middlewares.UserMiddleware(svc, secretKey))
+	{
+		cardRoutes.GET("/:cardID", cardHandler.GetCardByID)
+		cardRoutes.GET("/list/:listID", cardHandler.GetCardsByList)
+		cardRoutes.GET("/board/:boardID", cardHandler.GetCardsByBoard)
+
+		cardRoutes.POST("/", cardHandler.CreateCard)
+		cardRoutes.POST("/:cardID/attachment/:attachmentID", cardHandler.AddCardAttachment)
+		cardRoutes.POST("/:cardID/comment", cardHandler.AddCardComment)
+
+		cardRoutes.PUT("/:cardID/position", cardHandler.MoveCardPosition)
+		cardRoutes.PUT("/:cardID/name", cardHandler.UpdateCardName)
+		cardRoutes.PUT("/:cardID/label/:labelID", cardHandler.AddCardLabel)
+		cardRoutes.PUT("/:cardID/dates", cardHandler.SetCardDates)
+		cardRoutes.PUT("/:cardID/completed", cardHandler.ToggleCardCompleted)
+		cardRoutes.PUT("/:cardID/members", cardHandler.AddCardMembers)
+		cardRoutes.PUT("/:cardID/archive", cardHandler.ArchiveCard)
+		cardRoutes.PUT("/:cardID/restore", cardHandler.RestoreCard)
+
+		cardRoutes.DELETE("/:cardID/label/:labelID", cardHandler.RemoveCardLabel)
+		cardRoutes.DELETE("/:cardID/attachment/:attachmentID", cardHandler.RemoveCardAttachment)
+		cardRoutes.DELETE("/:cardID/comment/:commentID", cardHandler.RemoveCardComment)
+		cardRoutes.DELETE("/:cardID/members", cardHandler.RemoveCardMembers)
+		cardRoutes.DELETE("/:cardID", cardHandler.DeleteCard)
+	}
 }

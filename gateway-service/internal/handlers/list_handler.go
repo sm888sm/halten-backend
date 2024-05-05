@@ -49,21 +49,27 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 		return
 	}
 
-	boardService, err := h.services.GetBoardClient()
+	boardClient, err := h.services.GetBoardClient()
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	listService, err := h.services.GetListClient()
+	listClient, err := h.services.GetListClient()
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
 	}
 
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
 
-	grpcBoardResp, err := boardService.GetBoardIDByList(ctx, grpcBoardReq)
+	grpcBoardResp, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
 
 	boardID := grpcBoardResp.BoardID
 
@@ -77,7 +83,7 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 
 	grpcListReq := &pb_list.GetListByIDRequest{ListID: uri.ListID} // Convert the HTTP request to the gRPC request
 
-	grpcListResp, err := listService.GetListByID(ctx, grpcListReq)
+	grpcListResp, err := listClient.GetListByID(ctx, grpcListReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
@@ -105,7 +111,7 @@ func (h *ListHandler) GetListsByBoard(c *gin.Context) {
 		return
 	}
 
-	listService, err := h.services.GetListClient()
+	listClient, err := h.services.GetListClient()
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
@@ -121,7 +127,7 @@ func (h *ListHandler) GetListsByBoard(c *gin.Context) {
 
 	grpcReq := &pb_list.GetListsByBoardRequest{} // Convert the HTTP request to the gRPC request
 
-	resp, err := listService.GetListsByBoard(ctx, grpcReq)
+	resp, err := listClient.GetListsByBoard(ctx, grpcReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
@@ -163,10 +169,9 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(req.BoardID, 10))
 	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
-	grpcListReq := &pb_list.CreateListRequest{List: &pb_list.List{
-		Name:    req.Name,
-		BoardID: req.BoardID,
-	}} // Convert the HTTP request to the gRPC request
+	grpcListReq := &pb_list.CreateListRequest{
+		Name: req.Name,
+	}
 	grpcListRes, err := listClient.CreateList(ctx, grpcListReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
@@ -174,67 +179,6 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 	}
 
 	responsehandlers.Success(c, http.StatusOK, "List created successfully", grpcListRes.List)
-}
-
-type UpdateListNameUri struct {
-	ListID uint64 `uri:"listID" binding:"required"`
-}
-
-type UpdateListNameBody struct {
-	Name string `json:"name" binding:"required"`
-}
-
-func (h *ListHandler) UpdateListName(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	var uri UpdateListNameUri
-	if err := c.ShouldBindUri(&uri); err != nil {
-		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
-		return
-	}
-
-	var body UpdateListNameBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
-		return
-	}
-
-	userID, err := getUserID(c)
-	if err != nil {
-		errorhandlers.HandleError(c, err)
-		return
-	}
-
-	boardClient, err := h.services.GetBoardClient()
-	if err != nil {
-		errorhandlers.HandleError(c, err)
-		return
-	}
-
-	listClient, err := h.services.GetListClient()
-	if err != nil {
-		errorhandlers.HandleError(c, err)
-		return
-	}
-
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
-
-	grpcBoardRes, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
-
-	boardID := grpcBoardRes.BoardID
-
-	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(boardID, 10))
-	ctx = metadata.NewOutgoingContext(c.Request.Context(), md)
-
-	grpcListReq := &pb_list.UpdateListNameRequest{Name: body.Name}
-
-	grpcListRes, err := listClient.UpdateListName(ctx, grpcListReq)
-	if err != nil {
-		errorhandlers.HandleError(c, err)
-		return
-	}
-
-	responsehandlers.Success(c, http.StatusOK, grpcListRes.Message, nil)
 }
 
 type MoveListPositionUri struct {
@@ -278,9 +222,15 @@ func (h *ListHandler) MoveListPosition(c *gin.Context) {
 		return
 	}
 
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
 
 	grpcBoardRes, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
 
 	boardID := grpcBoardRes.BoardID
 
@@ -290,6 +240,76 @@ func (h *ListHandler) MoveListPosition(c *gin.Context) {
 	grpcListReq := &pb_list.MoveListPositionRequest{ListID: uri.ListID, Position: body.Position}
 
 	grpcListRes, err := listClient.MoveListPosition(ctx, grpcListReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
+
+	responsehandlers.Success(c, http.StatusOK, grpcListRes.Message, nil)
+}
+
+type UpdateListNameUri struct {
+	ListID uint64 `uri:"listID" binding:"required"`
+}
+
+type UpdateListNameBody struct {
+	Name string `json:"name" binding:"required"`
+}
+
+func (h *ListHandler) UpdateListName(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var uri UpdateListNameUri
+	if err := c.ShouldBindUri(&uri); err != nil {
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid URI parameters"))
+		return
+	}
+
+	var body UpdateListNameBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
+		return
+	}
+
+	userID, err := getUserID(c)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
+
+	boardClient, err := h.services.GetBoardClient()
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
+
+	listClient, err := h.services.GetListClient()
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
+
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
+
+	grpcBoardRes, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
+
+	boardID := grpcBoardRes.BoardID
+
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(boardID, 10))
+	ctx = metadata.NewOutgoingContext(c.Request.Context(), md)
+
+	grpcListReq := &pb_list.UpdateListNameRequest{
+		ListID: uri.ListID,
+		Name:   body.Name,
+	}
+
+	grpcListRes, err := listClient.UpdateListName(ctx, grpcListReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
 		return
@@ -329,9 +349,15 @@ func (h *ListHandler) ArchiveList(c *gin.Context) {
 		return
 	}
 
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
 
 	grpcBoardResp, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
 
 	boardID := grpcBoardResp.BoardID
 
@@ -380,9 +406,15 @@ func (h *ListHandler) RestoreList(c *gin.Context) {
 		return
 	}
 
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
 
 	grpcBoardResp, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
 
 	boardID := grpcBoardResp.BoardID
 
@@ -431,9 +463,15 @@ func (h *ListHandler) DeleteList(c *gin.Context) {
 		return
 	}
 
-	grpcBoardReq := &pb_board.GetBoardIDByListRequest{ListID: uri.ListID}
+	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
+		ListID: uri.ListID,
+	}
 
 	grpcBoardResp, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
+	if err != nil {
+		errorhandlers.HandleError(c, err)
+		return
+	}
 
 	boardID := grpcBoardResp.BoardID
 
@@ -454,12 +492,12 @@ func (h *ListHandler) DeleteList(c *gin.Context) {
 // Helpers
 
 func (h *ListHandler) CheckVisibility(ctx context.Context, userID, boardID uint64) error {
-	authService, err := h.services.GetAuthClient()
+	authClient, err := h.services.GetAuthClient()
 	if err != nil {
 		return err
 	}
 
-	_, err = authService.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
+	_, err = authClient.CheckBoardVisibility(ctx, &pb_auth.CheckBoardVisibilityRequest{
 		UserID:  userID,
 		BoardID: boardID,
 	})

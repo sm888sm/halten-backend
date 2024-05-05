@@ -1,9 +1,9 @@
 package services
 
 import (
+	"net/http"
 	"time"
 
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandlers" // Assuming your gRPC definitions are here
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +23,7 @@ func (s *AuthService) generateToken(userID uint64, duration time.Duration) (stri
 }
 
 func (s *AuthService) validateToken(tokenString string) (*jwt.MapClaims, error) {
-	invalidTokenError := status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(httpcodes.ErrBadRequest, "Invalid token").Error())
+	invalidTokenError := status.Errorf(codes.Unauthenticated, errorhandlers.NewAPIError(http.StatusUnauthorized, "Invalid token").Error())
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	external_services "github.com/sm888sm/halten-backend/gateway-service/external/services"
 	pb_user "github.com/sm888sm/halten-backend/user-service/api/pb"
@@ -52,7 +51,7 @@ func UserMiddleware(services *external_services.Services, secretKey string) gin.
 }
 
 func validateToken(tokenString string, secretKey string) (*jwt.MapClaims, error) {
-	invalidTokenError := errorhandlers.NewAPIError(httpcodes.ErrBadRequest, "Invalid token")
+	invalidTokenError := errorhandlers.NewGrpcBadRequestError("Invalid token")
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

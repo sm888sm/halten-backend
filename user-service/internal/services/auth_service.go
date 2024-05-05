@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	pb_auth "github.com/sm888sm/halten-backend/user-service/api/pb" // Assuming your gRPC definitions are here
 	"github.com/sm888sm/halten-backend/user-service/internal/repositories"
@@ -35,7 +35,7 @@ func (s *AuthService) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(res.User.Password), []byte(req.Password)); err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, errorhandlers.NewAPIError(httpcodes.ErrUnauthorized, "Invalid credentials").Error())
+		return nil, status.Errorf(codes.Unauthenticated, errorhandlers.NewAPIError(http.StatusUnauthorized, "Invalid credentials").Error())
 	}
 
 	accessToken, err := s.generateToken(res.User.ID, 15*time.Minute)

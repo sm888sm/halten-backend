@@ -60,7 +60,7 @@ func (v *ValidatorInterceptor) ValidationInterceptor(ctx context.Context, req in
 func validateCreateListRequest(req *pb_list.CreateListRequest) error {
 	fieldErrors := make(map[string]errorhandlers.FieldError)
 
-	if req.List.Name == "" {
+	if req.Name == "" {
 		fieldErrors["Name"] = errorhandlers.FieldError{
 			Field:   "name",
 			Message: "List name cannot be empty",

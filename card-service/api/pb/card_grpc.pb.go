@@ -26,13 +26,14 @@ type CardServiceClient interface {
 	GetCardByID(ctx context.Context, in *GetCardByIDRequest, opts ...grpc.CallOption) (*GetCardByIDResponse, error)
 	GetCardsByList(ctx context.Context, in *GetCardsByListRequest, opts ...grpc.CallOption) (*GetCardsByListResponse, error)
 	GetCardsByBoard(ctx context.Context, in *GetCardsByBoardRequest, opts ...grpc.CallOption) (*GetCardsByBoardResponse, error)
+	// TODO : Add GetArchivedCardsByBoard
 	MoveCardPosition(ctx context.Context, in *MoveCardPositionRequest, opts ...grpc.CallOption) (*MoveCardPositionResponse, error)
 	UpdateCardName(ctx context.Context, in *UpdateCardNameRequest, opts ...grpc.CallOption) (*UpdateCardNameResponse, error)
 	UpdateCardDescription(ctx context.Context, in *UpdateCardDescriptionRequest, opts ...grpc.CallOption) (*UpdateCardDescriptionResponse, error)
 	AddCardLabel(ctx context.Context, in *AddCardLabelRequest, opts ...grpc.CallOption) (*AddCardLabelResponse, error)
 	RemoveCardLabel(ctx context.Context, in *RemoveCardLabelRequest, opts ...grpc.CallOption) (*RemoveCardLabelResponse, error)
 	SetCardDates(ctx context.Context, in *SetCardDatesRequest, opts ...grpc.CallOption) (*SetCardDatesResponse, error)
-	MarkCardComplete(ctx context.Context, in *MarkCardCompleteRequest, opts ...grpc.CallOption) (*MarkCardCompleteResponse, error)
+	ToggleCardCompleted(ctx context.Context, in *ToggleCardCompletedRequest, opts ...grpc.CallOption) (*ToggleCardCompletedResponse, error)
 	AddCardAttachment(ctx context.Context, in *AddCardAttachmentRequest, opts ...grpc.CallOption) (*AddCardAttachmentResponse, error)
 	RemoveCardAttachment(ctx context.Context, in *RemoveCardAttachmentRequest, opts ...grpc.CallOption) (*RemoveCardAttachmentResponse, error)
 	AddCardComment(ctx context.Context, in *AddCardCommentRequest, opts ...grpc.CallOption) (*AddCardCommentResponse, error)
@@ -142,9 +143,9 @@ func (c *cardServiceClient) SetCardDates(ctx context.Context, in *SetCardDatesRe
 	return out, nil
 }
 
-func (c *cardServiceClient) MarkCardComplete(ctx context.Context, in *MarkCardCompleteRequest, opts ...grpc.CallOption) (*MarkCardCompleteResponse, error) {
-	out := new(MarkCardCompleteResponse)
-	err := c.cc.Invoke(ctx, "/cardpb.CardService/MarkCardComplete", in, out, opts...)
+func (c *cardServiceClient) ToggleCardCompleted(ctx context.Context, in *ToggleCardCompletedRequest, opts ...grpc.CallOption) (*ToggleCardCompletedResponse, error) {
+	out := new(ToggleCardCompletedResponse)
+	err := c.cc.Invoke(ctx, "/cardpb.CardService/ToggleCardCompleted", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -240,13 +241,14 @@ type CardServiceServer interface {
 	GetCardByID(context.Context, *GetCardByIDRequest) (*GetCardByIDResponse, error)
 	GetCardsByList(context.Context, *GetCardsByListRequest) (*GetCardsByListResponse, error)
 	GetCardsByBoard(context.Context, *GetCardsByBoardRequest) (*GetCardsByBoardResponse, error)
+	// TODO : Add GetArchivedCardsByBoard
 	MoveCardPosition(context.Context, *MoveCardPositionRequest) (*MoveCardPositionResponse, error)
 	UpdateCardName(context.Context, *UpdateCardNameRequest) (*UpdateCardNameResponse, error)
 	UpdateCardDescription(context.Context, *UpdateCardDescriptionRequest) (*UpdateCardDescriptionResponse, error)
 	AddCardLabel(context.Context, *AddCardLabelRequest) (*AddCardLabelResponse, error)
 	RemoveCardLabel(context.Context, *RemoveCardLabelRequest) (*RemoveCardLabelResponse, error)
 	SetCardDates(context.Context, *SetCardDatesRequest) (*SetCardDatesResponse, error)
-	MarkCardComplete(context.Context, *MarkCardCompleteRequest) (*MarkCardCompleteResponse, error)
+	ToggleCardCompleted(context.Context, *ToggleCardCompletedRequest) (*ToggleCardCompletedResponse, error)
 	AddCardAttachment(context.Context, *AddCardAttachmentRequest) (*AddCardAttachmentResponse, error)
 	RemoveCardAttachment(context.Context, *RemoveCardAttachmentRequest) (*RemoveCardAttachmentResponse, error)
 	AddCardComment(context.Context, *AddCardCommentRequest) (*AddCardCommentResponse, error)
@@ -293,8 +295,8 @@ func (UnimplementedCardServiceServer) RemoveCardLabel(context.Context, *RemoveCa
 func (UnimplementedCardServiceServer) SetCardDates(context.Context, *SetCardDatesRequest) (*SetCardDatesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetCardDates not implemented")
 }
-func (UnimplementedCardServiceServer) MarkCardComplete(context.Context, *MarkCardCompleteRequest) (*MarkCardCompleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MarkCardComplete not implemented")
+func (UnimplementedCardServiceServer) ToggleCardCompleted(context.Context, *ToggleCardCompletedRequest) (*ToggleCardCompletedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ToggleCardCompleted not implemented")
 }
 func (UnimplementedCardServiceServer) AddCardAttachment(context.Context, *AddCardAttachmentRequest) (*AddCardAttachmentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddCardAttachment not implemented")
@@ -516,20 +518,20 @@ func _CardService_SetCardDates_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CardService_MarkCardComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MarkCardCompleteRequest)
+func _CardService_ToggleCardCompleted_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleCardCompletedRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CardServiceServer).MarkCardComplete(ctx, in)
+		return srv.(CardServiceServer).ToggleCardCompleted(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cardpb.CardService/MarkCardComplete",
+		FullMethod: "/cardpb.CardService/ToggleCardCompleted",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CardServiceServer).MarkCardComplete(ctx, req.(*MarkCardCompleteRequest))
+		return srv.(CardServiceServer).ToggleCardCompleted(ctx, req.(*ToggleCardCompletedRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -744,8 +746,8 @@ var CardService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CardService_SetCardDates_Handler,
 		},
 		{
-			MethodName: "MarkCardComplete",
-			Handler:    _CardService_MarkCardComplete_Handler,
+			MethodName: "ToggleCardCompleted",
+			Handler:    _CardService_ToggleCardCompleted_Handler,
 		},
 		{
 			MethodName: "AddCardAttachment",

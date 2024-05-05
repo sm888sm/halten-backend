@@ -4,11 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 	models "github.com/sm888sm/halten-backend/models"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -53,7 +50,7 @@ func (r *GormListRepository) GetListByID(req *GetListRequest) (*GetListResponse,
 	var list models.List
 	if err := r.db.Where("id = ? AND board_id = ?", req.ID, req.BoardID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+			return nil, errorhandlers.NewGrpcNotFoundError("List not found")
 		}
 		return nil, errorhandlers.NewGrpcInternalError()
 	}
@@ -76,7 +73,7 @@ func (r *GormListRepository) UpdateListName(req *UpdateListNameRequest) error {
 	var existingList models.List
 	if err := r.db.Where("id = ? AND board_id = ?", req.ID, req.BoardID).First(&existingList).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+			return errorhandlers.NewGrpcNotFoundError("List not found")
 		}
 		return errorhandlers.NewGrpcInternalError()
 	}
@@ -94,7 +91,7 @@ func (r *GormListRepository) MoveListPosition(req *MoveListPositionRequest) erro
 	var count int64
 	r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ID, req.BoardID).Count(&count)
 	if count == 0 {
-		return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+		return errorhandlers.NewGrpcNotFoundError("List not found")
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
@@ -102,7 +99,7 @@ func (r *GormListRepository) MoveListPosition(req *MoveListPositionRequest) erro
 		var lists []*models.List
 		if err := tx.Where("board_id = ?", req.BoardID).Find(&lists).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+				return errorhandlers.NewGrpcNotFoundError("List not found")
 			}
 			return errorhandlers.NewGrpcInternalError()
 		}
@@ -137,16 +134,20 @@ func (r *GormListRepository) MoveListPosition(req *MoveListPositionRequest) erro
 }
 
 func (r *GormListRepository) ArchiveList(req *ArchiveListRequest) error {
-	err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", true).Error
-	if err != nil {
+	if err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", true).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errorhandlers.NewGrpcNotFoundError("List not found")
+		}
 		return errorhandlers.NewGrpcInternalError()
 	}
 	return nil
 }
 
 func (r *GormListRepository) RestoreList(req *RestoreListRequest) error {
-	err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", false).Error
-	if err != nil {
+	if err := r.db.Model(&models.List{}).Where("id = ? AND board_id = ?", req.ListID, req.BoardID).Update("archived", false).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errorhandlers.NewGrpcNotFoundError("List not found")
+		}
 		return errorhandlers.NewGrpcInternalError()
 	}
 	return nil
@@ -157,7 +158,7 @@ func (r *GormListRepository) DeleteList(req *DeleteListRequest) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id = ? AND board_id = ?", req.ID, req.BoardID).Delete(&models.List{}).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "List not found").Error())
+				return errorhandlers.NewGrpcNotFoundError("List not found")
 			}
 			return errorhandlers.NewGrpcInternalError()
 		}

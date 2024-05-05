@@ -53,7 +53,7 @@ func (s *ListService) GetListsByID(ctx context.Context, req *pb.GetListByIDReque
 			ListID:   list.ID,
 			BoardID:  list.BoardID,
 			Name:     list.Name,
-			Position: int32(list.Position),
+			Position: list.Position,
 		}
 	}
 
@@ -92,7 +92,7 @@ func (s *ListService) GetListsByBoard(ctx context.Context, req *pb.GetListsByBoa
 			ListID:   list.ID,
 			BoardID:  list.BoardID,
 			Name:     list.Name,
-			Position: int32(list.Position),
+			Position: list.Position,
 		}
 	}
 
@@ -118,7 +118,7 @@ func (s *ListService) CreateList(ctx context.Context, req *pb.CreateListRequest)
 
 	list := &models.List{
 		BoardID: boardID,
-		Name:    req.List.Name,
+		Name:    req.Name,
 	}
 
 	createListReq := &repositories.CreateListRequest{
@@ -131,9 +131,10 @@ func (s *ListService) CreateList(ctx context.Context, req *pb.CreateListRequest)
 	}
 	return &pb.CreateListResponse{
 		List: &pb.List{
-			ListID:  resp.List.ID,
-			BoardID: resp.List.BoardID,
-			Name:    resp.List.Name,
+			ListID:   resp.List.ID,
+			BoardID:  resp.List.BoardID,
+			Name:     resp.List.Name,
+			Position: resp.List.Position,
 		},
 	}, nil
 }
@@ -178,7 +179,7 @@ func (s *ListService) MoveListPosition(ctx context.Context, req *pb.MoveListPosi
 
 	moveListPositionReq := &repositories.MoveListPositionRequest{
 		ID:       req.ListID,
-		Position: int64(req.Position),
+		Position: req.Position,
 		BoardID:  boardID,
 		UserID:   userID,
 	}

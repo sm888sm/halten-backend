@@ -30,7 +30,7 @@ message List {
     uint64 listID = 1;
     uint64 boardID = 2;
     string name = 3;
-    int32 position = 4;
+    int64 position = 4;
 }
 
 message Card {
@@ -105,8 +105,7 @@ message CreateBoardRequest {
 }
 
 message CreateBoardResponse {
-    uint64 boardID = 1;
-    string name = 2;
+    Board board = 1;
 }
 
 message GetBoardByIDRequest {

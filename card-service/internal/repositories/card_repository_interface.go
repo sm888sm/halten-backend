@@ -83,7 +83,7 @@ type SetCardDatesRequest struct {
 	BoardID   uint64
 }
 
-type MarkCardCompleteRequest struct {
+type ToggleCardCompletedRequest struct {
 	CardID  uint64
 	BoardID uint64
 }
@@ -147,7 +147,7 @@ type CardRepository interface {
 	AddCardLabel(req *AddCardLabelRequest) error
 	RemoveCardLabel(req *RemoveCardLabelRequest) error
 	SetCardDates(req *SetCardDatesRequest) error
-	MarkCardComplete(req *MarkCardCompleteRequest) error
+	ToggleCardCompleted(req *ToggleCardCompletedRequest) error
 	AddCardAttachment(req *AddCardAttachmentRequest) error
 	RemoveCardAttachment(req *RemoveCardAttachmentRequest) error
 	AddCardComment(req *AddCardCommentRequest) error

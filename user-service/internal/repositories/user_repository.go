@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"net/http"
 	"time"
 
 	models "github.com/sm888sm/halten-backend/models"
 
-	"github.com/sm888sm/halten-backend/common/constants/httpcodes"
 	"github.com/sm888sm/halten-backend/common/constants/roleshierarchy"
 	"github.com/sm888sm/halten-backend/common/errorhandlers"
 
@@ -36,7 +36,7 @@ func (r *GormUserRepository) CreateUser(req *CreateUserRequest) (*CreateUserResp
 				errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "username already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(http.StatusConflict, "username already in use").Error())
 		}
 
 		// Check if email is already in use
@@ -46,7 +46,7 @@ func (r *GormUserRepository) CreateUser(req *CreateUserRequest) (*CreateUserResp
 				return errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(http.StatusConflict, "email already in use").Error())
 		}
 
 		// Create the user
@@ -69,7 +69,7 @@ func (r *GormUserRepository) GetUserByID(req *GetUserByIDRequest) (*GetUserByIDR
 	result := r.db.First(&user, req.UserID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+			return nil, errorhandlers.NewGrpcNotFoundError("User not found")
 		}
 		return nil, errorhandlers.NewGrpcInternalError()
 	}
@@ -81,7 +81,7 @@ func (r *GormUserRepository) GetUserByUsername(req *GetUserByUsernameRequest) (*
 	result := r.db.Where("username = ?", req.Username).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+			return nil, errorhandlers.NewGrpcNotFoundError("User not found")
 		}
 		return nil, errorhandlers.NewGrpcInternalError()
 	}
@@ -94,7 +94,7 @@ func (r *GormUserRepository) UpdatePassword(req *UpdatePasswordRequest) error {
 		return errorhandlers.NewGrpcInternalError()
 	}
 	if result.RowsAffected == 0 {
-		return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+		return errorhandlers.NewGrpcNotFoundError("User not found")
 	}
 	return nil
 }
@@ -107,7 +107,7 @@ func (r *GormUserRepository) UpdateEmail(req *UpdateEmailRequest) error {
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return errorhandlers.NewGrpcNotFoundError("User not found")
 			}
 			return errorhandlers.NewGrpcInternalError()
 		}
@@ -119,7 +119,7 @@ func (r *GormUserRepository) UpdateEmail(req *UpdateEmailRequest) error {
 				errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "email already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(http.StatusConflict, "email already in use").Error())
 		}
 
 		// Generate a token for email verification
@@ -151,7 +151,7 @@ func (r *GormUserRepository) UpdateUsername(req *UpdateUsernameRequest) error {
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return errorhandlers.NewGrpcNotFoundError("User not found")
 			}
 			return errorhandlers.NewGrpcInternalError()
 		}
@@ -163,7 +163,7 @@ func (r *GormUserRepository) UpdateUsername(req *UpdateUsernameRequest) error {
 				return errorhandlers.NewGrpcInternalError()
 			}
 		} else {
-			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(httpcodes.ErrConflict, "Username already in use").Error())
+			return status.Errorf(codes.AlreadyExists, errorhandlers.NewAPIError(http.StatusConflict, "Username already in use").Error())
 		}
 
 		// Update username
@@ -190,14 +190,14 @@ func (r *GormUserRepository) ConfirmEmail(req *ConfirmEmailRequest) error {
 		result := tx.First(&user, req.UserID)
 		if result.Error != nil {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "User not found").Error())
+				return errorhandlers.NewGrpcNotFoundError("User not found")
 			}
 			return errorhandlers.NewGrpcInternalError()
 		}
 
 		// Check if token is valid
 		if user.Token != req.Token || time.Since(user.TokenCreatedAt) > 24*time.Hour {
-			return status.Errorf(codes.InvalidArgument, errorhandlers.NewAPIError(httpcodes.ErrBadRequest, "Invalid or expired token").Error())
+			return status.Errorf(codes.Unauthenticated, errorhandlers.NewAPIError(http.StatusUnauthorized, "Invalid or expired token").Error())
 		}
 
 		// Update email
@@ -220,16 +220,16 @@ func (r *GormUserRepository) ConfirmEmail(req *ConfirmEmailRequest) error {
 }
 
 func (r *GormUserRepository) CheckBoardUserRole(req *CheckBoardUserRoleRequest) error {
-	var permission models.BoardMember
-	if err := r.db.Select("role").Where("board_id = ? AND user_id = ?", req.BoardID, req.UserID).First(&permission).Error; err != nil {
+	var boardMember models.BoardMember
+	if err := r.db.Select("role").Where("board_id = ? AND user_id = ?", req.BoardID, req.UserID).First(&boardMember).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Permission not found").Error())
+			return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(http.StatusForbidden, "Board member not found").Error())
 		}
 		return errorhandlers.NewGrpcInternalError()
 	}
 
-	if roleshierarchy.RoleHierarchy[permission.Role] < roleshierarchy.RoleHierarchy[req.RequiredRole] {
-		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Insufficient permissions").Error())
+	if roleshierarchy.RoleHierarchy[boardMember.Role] < roleshierarchy.RoleHierarchy[req.RequiredRole] {
+		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(http.StatusForbidden, "Insufficient permissions").Error())
 	}
 
 	return nil
@@ -238,23 +238,23 @@ func (r *GormUserRepository) CheckBoardUserRole(req *CheckBoardUserRoleRequest) 
 func (r *GormUserRepository) CheckBoardVisibility(req *CheckBoardVisibilityRequest) error {
 	var result struct {
 		Visibility string
-		UserID     uint
+		UserID     uint64
 	}
 
-	query := `SELECT boards.visibility, permissions.user_id 
+	query := `SELECT boards.visibility, board_members.user_id 
               FROM boards 
-              LEFT JOIN permissions ON boards.id = permissions.board_id AND permissions.user_id = ?
+              LEFT JOIN board_members ON boards.id = board_members.board_id AND board_members.user_id = ?
               WHERE boards.id = ?`
 
 	if err := r.db.Raw(query, req.UserID, req.BoardID).Scan(&result).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return status.Errorf(codes.NotFound, errorhandlers.NewAPIError(httpcodes.ErrNotFound, "Board not found").Error())
+			return errorhandlers.NewGrpcNotFoundError("Board not found")
 		}
 		return errorhandlers.NewGrpcInternalError()
 	}
 
-	if result.Visibility == "private" && result.UserID != uint(req.UserID) {
-		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(httpcodes.ErrForbidden, "Permission not found").Error())
+	if result.Visibility == "private" && result.UserID != req.UserID {
+		return status.Errorf(codes.PermissionDenied, errorhandlers.NewAPIError(http.StatusForbidden, "User is not a member of the specified board").Error())
 	}
 
 	return nil
