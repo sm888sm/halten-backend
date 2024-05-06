@@ -200,7 +200,7 @@ func (h *CardHandler) GetCardsByList(c *gin.Context) {
 ****************************
  */
 
-type CreateCardRequest struct {
+type CreateCardBody struct {
 	Name   string `json:"name" binding:"required"`
 	ListID uint64 `json:"listID" binding:"required"`
 }
@@ -208,8 +208,8 @@ type CreateCardRequest struct {
 func (h *CardHandler) CreateCard(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	var req CreateCardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body CreateCardBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -233,7 +233,7 @@ func (h *CardHandler) CreateCard(c *gin.Context) {
 	}
 
 	grpcBoardReq := &pb_board.GetBoardIDByListRequest{
-		ListID: req.ListID,
+		ListID: body.ListID,
 	}
 
 	grpcBoardRes, err := boardClient.GetBoardIDByList(ctx, grpcBoardReq)
@@ -247,8 +247,8 @@ func (h *CardHandler) CreateCard(c *gin.Context) {
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	grpcCardReq := &pb_card.CreateCardRequest{
-		ListID: req.ListID,
-		Name:   req.Name,
+		ListID: body.ListID,
+		Name:   body.Name,
 	}
 	grpcCardRes, err := cardClient.CreateCard(ctx, grpcCardReq)
 	if err != nil {
@@ -614,7 +614,7 @@ func (h *CardHandler) SetCardDates(c *gin.Context) {
 	}
 
 	var body SetCardDatesBody
-	if err := c.ShouldBind(&body); err != nil {
+	if err := c.ShouldBindJSON(&body); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -901,7 +901,7 @@ func (h *CardHandler) AddCardComment(c *gin.Context) {
 	}
 
 	var body AddCardCommentBody
-	if err := c.ShouldBind(&body); err != nil {
+	if err := c.ShouldBindJSON(&body); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}

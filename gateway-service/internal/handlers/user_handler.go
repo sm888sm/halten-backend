@@ -20,9 +20,16 @@ func NewUserHandler(services *external_services.Services) *UserHandler {
 	return &UserHandler{services: services}
 }
 
+type CreateUserBody struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Fullname string `json:"fullname" binding:"required"`
+}
+
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var req pb_user.CreateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body CreateUserBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -33,7 +40,14 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	resp, err := userService.CreateUser(c, &req)
+	grpcUserReq := &pb_user.CreateUserRequest{
+		Username: body.Username,
+		Password: body.Password,
+		Email:    body.Email,
+		Fullname: body.Fullname,
+	}
+
+	resp, err := userService.CreateUser(c, grpcUserReq)
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
@@ -53,9 +67,14 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	responsehandlers.Success(c, http.StatusCreated, "User created successfully", resp)
 }
 
+type UpdateEmailBody struct {
+	UserID   uint64 `json:"userID" binding:"required"`
+	NewEmail string `json:"newEmail" binding:"required"`
+}
+
 func (h *UserHandler) UpdateEmail(c *gin.Context) {
-	var req pb_user.UpdateEmailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body UpdateEmailBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -66,7 +85,12 @@ func (h *UserHandler) UpdateEmail(c *gin.Context) {
 		return
 	}
 
-	resp, err := userService.UpdateEmail(c, &req)
+	grpcUserReq := &pb_user.UpdateEmailRequest{
+		UserID:   body.UserID,
+		NewEmail: body.NewEmail,
+	}
+
+	resp, err := userService.UpdateEmail(c, grpcUserReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return
@@ -75,9 +99,14 @@ func (h *UserHandler) UpdateEmail(c *gin.Context) {
 	responsehandlers.Success(c, http.StatusOK, "Email updated successfully", resp)
 }
 
+type UpdatePasswordBody struct {
+	UserID      uint64 `json:"userID" binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required"`
+}
+
 func (h *UserHandler) UpdatePassword(c *gin.Context) {
-	var req pb_user.UpdatePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body UpdatePasswordBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -88,7 +117,12 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	resp, err := userService.UpdatePassword(c, &req)
+	grpcUserReq := &pb_user.UpdatePasswordRequest{
+		UserID:      body.UserID,
+		NewPassword: body.NewPassword,
+	}
+
+	resp, err := userService.UpdatePassword(c, grpcUserReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return
@@ -97,9 +131,14 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 	responsehandlers.Success(c, http.StatusOK, "Password updated successfully", resp)
 }
 
+type UpdateUsernameBody struct {
+	UserID   uint64 `json:"userID" binding:"required"`
+	Username string `json:"username" binding:"required"`
+}
+
 func (h *UserHandler) UpdateUsername(c *gin.Context) {
-	var req pb_user.UpdateUsernameRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body UpdateUsernameBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -110,7 +149,12 @@ func (h *UserHandler) UpdateUsername(c *gin.Context) {
 		return
 	}
 
-	resp, err := userService.UpdateUsername(c, &req)
+	grpcUserReq := &pb_user.UpdateUsernameRequest{
+		UserID:   body.UserID,
+		Username: body.Username,
+	}
+
+	resp, err := userService.UpdateUsername(c, grpcUserReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return
@@ -119,9 +163,14 @@ func (h *UserHandler) UpdateUsername(c *gin.Context) {
 	responsehandlers.Success(c, http.StatusOK, "Username updated successfully", resp)
 }
 
+type ConfirmEmailBody struct {
+	UserID uint64 `json:"userID" binding:"required"`
+	Token  string `json:"token" binding:"required"`
+}
+
 func (h *UserHandler) ConfirmEmail(c *gin.Context) {
-	var req pb_user.ConfirmEmailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body ConfirmEmailBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -132,7 +181,12 @@ func (h *UserHandler) ConfirmEmail(c *gin.Context) {
 		return
 	}
 
-	resp, err := userService.ConfirmEmail(c, &req)
+	grpcUserReq := &pb_user.ConfirmEmailRequest{
+		UserID: body.UserID,
+		Token:  body.Token,
+	}
+
+	resp, err := userService.ConfirmEmail(c, grpcUserReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorhandlers.NewHttpInternalError())
 		return

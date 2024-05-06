@@ -39,20 +39,20 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 		boardRoutes.GET("/archived", boardHandler.GetArchivedBoardList)
 
 		boardRoutes.POST("/", boardHandler.CreateBoard)
-		boardRoutes.POST("/:boardID/users", boardHandler.AddBoardUsers)
+
 		boardRoutes.POST("/:boardID/labels", boardHandler.AddLabel)
 
 		boardRoutes.PUT("/:boardID/name", boardHandler.UpdateBoardName)
-		boardRoutes.PUT("/:boardID/users/:userID/role", boardHandler.AssignBoardUsersRole)
+		boardRoutes.PUT("/:boardID/users/add", boardHandler.AddBoardUsers)
+		boardRoutes.PUT("/:boardID/users/remove", boardHandler.RemoveBoardUsers)
+		boardRoutes.PUT("/:boardID/users/role", boardHandler.AssignBoardUsersRole)
 		boardRoutes.PUT("/:boardID/owner", boardHandler.ChangeBoardOwner)
 		boardRoutes.PUT("/:boardID/visibility", boardHandler.ChangeBoardVisibility)
 		boardRoutes.PUT("/:boardID/archive", boardHandler.ArchiveBoard)
 		boardRoutes.PUT("/:boardID/restore", boardHandler.RestoreBoard)
 
 		boardRoutes.DELETE("/:boardID", boardHandler.DeleteBoard)
-		boardRoutes.DELETE("/:boardID/users", boardHandler.RemoveBoardUsers)
 		boardRoutes.DELETE("/:boardID/labels/:labelID", boardHandler.RemoveLabel)
-
 	}
 
 	listRoutes := r.Group("/lists")
@@ -63,8 +63,8 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 
 		listRoutes.POST("/", listHandler.CreateList)
 
-		listRoutes.PUT("/:listID", listHandler.UpdateListName)
 		listRoutes.PUT("/:listID/move", listHandler.MoveListPosition)
+		listRoutes.PUT("/:listID/name", listHandler.UpdateListName)
 		listRoutes.PUT("/:listID/archive", listHandler.ArchiveList)
 		listRoutes.PUT("/:listID/restore", listHandler.RestoreList)
 
@@ -82,7 +82,7 @@ func SetupRoutes(r *gin.Engine, svc *external_services.Services, secretKey strin
 		cardRoutes.POST("/:cardID/attachment/:attachmentID", cardHandler.AddCardAttachment)
 		cardRoutes.POST("/:cardID/comment", cardHandler.AddCardComment)
 
-		cardRoutes.PUT("/:cardID/position", cardHandler.MoveCardPosition)
+		cardRoutes.PUT("/:cardID/move", cardHandler.MoveCardPosition)
 		cardRoutes.PUT("/:cardID/name", cardHandler.UpdateCardName)
 		cardRoutes.PUT("/:cardID/label/:labelID", cardHandler.AddCardLabel)
 		cardRoutes.PUT("/:cardID/dates", cardHandler.SetCardDates)

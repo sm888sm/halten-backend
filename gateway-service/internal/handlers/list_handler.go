@@ -142,14 +142,14 @@ func (h *ListHandler) GetListsByBoard(c *gin.Context) {
 ****************************
  */
 
-type CreateListRequest struct {
+type CreateListBody struct {
 	Name    string `json:"name" binding:"required"`
 	BoardID uint64 `json:"boardID" binding:"required"`
 }
 
 func (h *ListHandler) CreateList(c *gin.Context) {
-	var req CreateListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body CreateListBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -166,11 +166,11 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 		return
 	}
 
-	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(req.BoardID, 10))
+	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10), "boardID", strconv.FormatUint(body.BoardID, 10))
 	ctx := metadata.NewOutgoingContext(c.Request.Context(), md)
 
 	grpcListReq := &pb_list.CreateListRequest{
-		Name: req.Name,
+		Name: body.Name,
 	}
 	grpcListRes, err := listClient.CreateList(ctx, grpcListReq)
 	if err != nil {

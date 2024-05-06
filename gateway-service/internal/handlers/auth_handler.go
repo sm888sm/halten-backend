@@ -19,13 +19,16 @@ func NewAuthHandler(services *external_services.Services) *AuthHandler {
 	return &AuthHandler{services: services}
 }
 
+type LoginBody struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
 func (h *AuthHandler) Login(c *gin.Context) {
 	ctx := c.Request.Context()
-	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+
+	var body LoginBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -37,8 +40,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	loginRequest := pb_auth.LoginRequest{
-		Username: req.Username,
-		Password: req.Password,
+		Username: body.Username,
+		Password: body.Password,
 	}
 
 	response, err := authClient.Login(ctx, &loginRequest)
@@ -50,12 +53,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	responsehandlers.Success(c, http.StatusCreated, "User logged in successfully", response)
 }
 
+type RefreshTokenBody struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	ctx := c.Request.Context()
-	var req struct {
-		RefreshToken string `json:"refreshToken"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body RefreshTokenBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, errorhandlers.NewHttpBadRequestError())
 		return
 	}
@@ -67,7 +72,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	}
 
 	refreshTokenRequest := pb_auth.RefreshTokenRequest{
-		RefreshToken: req.RefreshToken,
+		RefreshToken: body.RefreshToken,
 	}
 
 	response, err := authClient.RefreshToken(ctx, &refreshTokenRequest)

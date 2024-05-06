@@ -29,15 +29,15 @@ func NewBoardHandler(services *external_services.Services) *BoardHandler {
 ********************
  */
 
-type CreateBoardRequest struct {
+type CreateBoardBody struct {
 	Name string `json:"name" binding:"required"`
 }
 
 func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	var req CreateBoardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body CreateBoardBody
+	if err := c.ShouldBindJSON(&body); err != nil {
 		errorhandlers.HandleError(c, errorhandlers.NewAPIError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -57,7 +57,7 @@ func (h *BoardHandler) CreateBoard(c *gin.Context) {
 	md := metadata.Pairs("userID", strconv.FormatUint(userID, 10))
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	grpcReq := &pb_board.CreateBoardRequest{Name: req.Name} // Convert the HTTP request to the gRPC request
+	grpcReq := &pb_board.CreateBoardRequest{Name: body.Name} // Convert the HTTP request to the gRPC request
 	res, err := boardClient.CreateBoard(ctx, grpcReq)
 	if err != nil {
 		errorhandlers.HandleError(c, err)
